@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>THE KING OF AZTLAN — 2D Arcade Fighting Game</title>
+    <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+    <div class="arcade-cabinet">
+        <!-- Marquesina Superior Estilo Videojuego Arcade -->
+        <header class="arcade-marquee">
+            <div class="marquee-brand">
+                <span class="neogeo-tag">NEOGEO MVS • 3 VS 3 TEAM BATTLE</span>
+                <h1>THE KING OF AZTLAN</h1>
+            </div>
+
+            <div class="cabinet-actions">
+                <button id="btnTitleScreen" class="btn-cabinet" title="Volver a la Pantalla de Título">
+                    Inicio
+                </button>
+                <button id="btnOnlineLobby" class="btn-cabinet online-btn" title="Multijugador en Línea P2P por Código">
+                    🌐 Sala Online
+                </button>
+                <button id="btnToggleAudio" class="btn-cabinet active" title="Activar o silenciar música y sonido">
+                    🔊 Sonido: ON
+                </button>
+                <button id="btnFullscreen" class="btn-cabinet" title="Pantalla Completa">
+                    ⛶ Pantalla Completa
+                </button>
+            </div>
+        </header>
+
+        <!-- Panel Desplegable de Multijugador en Línea (P2P por Código de Sala) -->
+        <section id="onlineLobbyPanel" class="online-lobby hidden">
+            <div class="online-lobby-header">
+                <div class="online-title">
+                    <span class="online-dot" id="onlineDot"></span>
+                    <strong>MULTIJUGADOR EN LÍNEA (P2P 1 vs 1)</strong>
+                    <span id="onlineStatusText" class="online-status-text">Crea una sala o ingresa el código de tu amigo</span>
+                </div>
+                <button id="btnCloseOnline" class="btn-close-lobby" title="Cerrar panel">✕</button>
+            </div>
+
+            <div class="online-lobby-controls">
+                <div class="online-box">
+                    <span class="box-label">JUGADOR 1 (ANFITRIÓN)</span>
+                    <div class="box-row">
+                        <button id="btnHostRoom" class="btn-cabinet primary">Crear Sala Online</button>
+                        <div id="roomCodeBadge" class="room-code-badge hidden">
+                            Código: <strong id="roomCodeValue">AZT-0000</strong>
+                            <button id="btnCopyCode" class="btn-copy" title="Copiar código">Copiar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="online-divider">VS</div>
+
+                <div class="online-box">
+                    <span class="box-label">JUGADOR 2 (INVITADO)</span>
+                    <div class="box-row">
+                        <input
+                            id="inputRoomCode"
+                            type="text"
+                            class="input-room-code"
+                            placeholder="Ej: AZT-4821"
+                            maxlength="10"
+                        />
+                        <button id="btnJoinRoom" class="btn-cabinet online-btn">Conectar</button>
+                        <button id="btnDisconnectRoom" class="btn-cabinet danger hidden">Salir</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Marco del Monitor CRT Arcade -->
+        <main id="cabinetScreen" class="canvas-wrapper crt-scanlines">
+            <canvas id="gameCanvas" width="960" height="540" tabindex="0"></canvas>
+        </main>
+
+        <!-- Tablero Visual de Controles (Solo Teclado y Mandos / Controles) -->
+        <section class="arcade-deck">
+            <!-- Tarjeta 1: Teclado -->
+            <div class="deck-card">
+                <div class="deck-card-header">
+                    <span class="deck-icon">⌨️</span>
+                    <h3>CONTROLES EN TECLADO</h3>
+                    <span class="deck-tag">LOCAL 1P / 2P</span>
+                </div>
+
+                <div class="key-groups">
+                    <div class="key-row">
+                        <span class="key-label">Movimiento (P1 / P2)</span>
+                        <div class="key-badges">
+                            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+                            <span class="sep">/</span>
+                            <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
+                        </div>
+                    </div>
+
+                    <div class="key-row">
+                        <span class="key-label">Puños (Débil LP / Fuerte HP)</span>
+                        <div class="key-badges">
+                            <kbd class="btn-lp">U</kbd> <kbd class="btn-hp">O</kbd>
+                            <span class="sep">• P2:</span>
+                            <kbd>Num 4</kbd> <kbd>Num 6</kbd>
+                        </div>
+                    </div>
+
+                    <div class="key-row">
+                        <span class="key-label">Patadas (Débil LK / Fuerte HK)</span>
+                        <div class="key-badges">
+                            <kbd class="btn-lk">I</kbd> <kbd class="btn-hk">P</kbd>
+                            <span class="sep">• P2:</span>
+                            <kbd>Num 5</kbd> <kbd>Num 1</kbd>
+                        </div>
+                    </div>
+
+                    <div class="key-row">
+                        <span class="key-label">Rodada (Evade) / Modo MAX</span>
+                        <div class="key-badges">
+                            <kbd class="btn-evade">J</kbd> Rodar
+                            <kbd class="btn-max">K</kbd> Modo MAX
+                            <kbd>Enter</kbd> Start
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 2: Mandos / Controles USB y Bluetooth -->
+            <div class="deck-card">
+                <div class="deck-card-header">
+                    <span class="deck-icon">🎮</span>
+                    <h3>MANDOS / CONTROLES ARCADE</h3>
+                    <span id="gamepadBadge" class="deck-tag gamepad-status">Conecta tu mando USB/BT</span>
+                </div>
+
+                <div class="key-groups">
+                    <div class="key-row">
+                        <span class="key-label">Movimiento y Saltos</span>
+                        <div class="key-badges">
+                            <kbd>Cruceta (D-Pad)</kbd> o <kbd>Stick Izquierdo</kbd>
+                        </div>
+                    </div>
+
+                    <div class="key-row">
+                        <span class="key-label">Puño Débil (LP) / Fuerte (HP)</span>
+                        <div class="key-badges">
+                            <kbd class="btn-lp">X / □</kbd> Débil
+                            <kbd class="btn-hp">Y / △</kbd> Fuerte
+                        </div>
+                    </div>
+
+                    <div class="key-row">
+                        <span class="key-label">Patada Débil (LK) / Fuerte (HK)</span>
+                        <div class="key-badges">
+                            <kbd class="btn-lk">A / ✕</kbd> Débil
+                            <kbd class="btn-hk">B / ○</kbd> Fuerte
+                        </div>
+                    </div>
+
+                    <div class="key-row">
+                        <span class="key-label">Evasión / Modo MAX / Menú</span>
+                        <div class="key-badges">
+                            <kbd class="btn-evade">LB / L1</kbd> Rodar
+                            <kbd class="btn-max">RB / R1</kbd> MAX
+                            <kbd>Start</kbd> Pelear
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Módulos del motor cargados en orden de dependencia -->
+    <script src="src/core/AudioSynth.js"></script>
+    <script src="src/core/PixelArtRenderer.js"></script>
+    <script src="src/core/CollisionBox.js"></script>
+    <script src="src/core/InputHandler.js"></script>
+    <script src="src/core/NetworkManager.js"></script>
+    <script src="src/roster/CharacterTemplates.js"></script>
+    <script src="src/entities/Projectile.js"></script>
+    <script src="src/entities/Fighter.js"></script>
+    <script src="src/ai/AIController.js"></script>
+    <script src="src/ui/HUD.js"></script>
+    <script src="src/core/GameLoop.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>

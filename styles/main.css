@@ -1,0 +1,445 @@
+/**
+ * @file main.css
+ * @description Diseño de Gabinete Arcade Neo-Geo para "THE KING OF AZTLAN".
+ * Interfaz limpia centrada en la pantalla del juego y el tablero visual de Teclado y Mandos.
+ */
+
+:root {
+    --bg-void: #05070e;
+    --cabinet-bg: #0c101d;
+    --panel-bg: #11182b;
+    --border-gold: #ffbe0b;
+    --accent-jade: #00ffc3;
+    --accent-crimson: #ff2a5f;
+    --accent-blue: #38b6ff;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: radial-gradient(circle at 50% 10%, #19223c 0%, var(--bg-void) 80%);
+    color: var(--text-main);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.arcade-cabinet {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Marquesina Superior de Videojuego */
+.arcade-marquee {
+    width: 100%;
+    background: linear-gradient(90deg, #12182b 0%, #1d142c 50%, #12182b 100%);
+    border: 2px solid #2e3b5e;
+    border-top: 3px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 10px 18px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+}
+
+.marquee-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.neogeo-tag {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--accent-jade);
+    text-transform: uppercase;
+}
+
+.marquee-brand h1 {
+    font-family: 'Courier New', monospace;
+    font-size: 1.65rem;
+    font-weight: 900;
+    letter-spacing: 2.5px;
+    color: var(--border-gold);
+    text-shadow: 2px 2px 0 #9a031e, 0 0 14px rgba(255, 190, 11, 0.35);
+    line-height: 1.1;
+}
+
+.cabinet-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.btn-cabinet {
+    background: #182238;
+    color: var(--text-main);
+    border: 1px solid #38496e;
+    padding: 7px 13px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-cabinet:hover {
+    border-color: var(--border-gold);
+    background: #233152;
+    transform: translateY(-1px);
+}
+
+.btn-cabinet.primary {
+    background: var(--border-gold);
+    color: #090d16;
+    border-color: #ffffff;
+}
+
+.btn-cabinet.online-btn {
+    border-color: var(--accent-blue);
+    color: #7dd3fc;
+}
+
+.btn-cabinet.online-btn.active {
+    background: rgba(56, 182, 255, 0.22);
+    color: #ffffff;
+    border-color: #38b6ff;
+}
+
+.btn-cabinet.active {
+    background: rgba(0, 255, 195, 0.16);
+    border-color: var(--accent-jade);
+    color: var(--accent-jade);
+}
+
+.btn-cabinet.danger {
+    background: rgba(255, 42, 95, 0.2);
+    border-color: var(--accent-crimson);
+    color: #fda4af;
+}
+
+/* Panel Desplegable de Sala Online P2P */
+.online-lobby {
+    width: 100%;
+    background: linear-gradient(180deg, #111a2e 0%, #0b1120 100%);
+    border: 2px solid var(--accent-blue);
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
+}
+
+.online-lobby.hidden,
+.hidden {
+    display: none !important;
+}
+
+.online-lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1e2d4a;
+}
+
+.online-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.86rem;
+}
+
+.online-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #64748b;
+    display: inline-block;
+}
+
+.online-dot.waiting {
+    background: var(--border-gold);
+    box-shadow: 0 0 8px var(--border-gold);
+}
+
+.online-dot.connected {
+    background: var(--accent-jade);
+    box-shadow: 0 0 10px var(--accent-jade);
+}
+
+.online-status-text {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.btn-close-lobby {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.online-lobby-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.online-box {
+    flex: 1;
+    min-width: 260px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid #263554;
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
+.box-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--border-gold);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.box-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.room-code-badge {
+    background: #090d16;
+    border: 1px dashed var(--accent-jade);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.room-code-badge strong {
+    color: var(--accent-jade);
+    font-family: monospace;
+    font-size: 1rem;
+    letter-spacing: 1px;
+}
+
+.btn-copy {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 0.74rem;
+    cursor: pointer;
+}
+
+.input-room-code {
+    background: #090d16;
+    color: #ffffff;
+    border: 1px solid #3b4d71;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    width: 135px;
+}
+
+.online-divider {
+    font-weight: 900;
+    color: var(--border-gold);
+    font-size: 1rem;
+}
+
+/* Marco del Monitor CRT Arcade */
+.canvas-wrapper {
+    position: relative;
+    border: 4px solid #e2e8f0;
+    outline: 5px solid #161e31;
+    border-radius: 4px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.9), 0 0 28px rgba(56, 182, 255, 0.18);
+    background: #000;
+    overflow: hidden;
+}
+
+.canvas-wrapper.crt-scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0) 2px,
+        rgba(0, 0, 0, 0.2) 3px,
+        rgba(0, 0, 0, 0.2) 4px
+    );
+}
+
+#gameCanvas {
+    display: block;
+    width: 960px;
+    height: 540px;
+    max-width: 100%;
+    height: auto;
+    outline: none;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+/* Tablero Visual de Controles (Solo Teclado y Mandos) */
+.arcade-deck {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 12px;
+}
+
+.deck-card {
+    background: linear-gradient(180deg, #121a2d 0%, #0b101d 100%);
+    border: 1px solid #263452;
+    border-top: 2px solid #3b4f7a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.deck-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1e2942;
+}
+
+.deck-icon {
+    font-size: 1.1rem;
+}
+
+.deck-card-header h3 {
+    font-size: 0.88rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--border-gold);
+    flex: 1;
+}
+
+.deck-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: rgba(148, 163, 184, 0.14);
+    color: #cbd5e1;
+    border: 1px solid #334155;
+}
+
+.deck-tag.connected {
+    background: rgba(0, 255, 195, 0.16);
+    color: var(--accent-jade);
+    border-color: var(--accent-jade);
+}
+
+.key-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.key-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    gap: 8px;
+}
+
+.key-label {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.key-badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    color: #cbd5e1;
+    font-size: 0.76rem;
+}
+
+.sep {
+    color: #64748b;
+    margin: 0 2px;
+}
+
+kbd {
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-bottom: 2px solid #0f172a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: monospace;
+}
+
+/* Colores clásicos de botones Neo-Geo MVS (A=Rojo, B=Amarillo, C=Verde, D=Azul) */
+kbd.btn-lp {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+kbd.btn-lk {
+    background: rgba(234, 179, 8, 0.22);
+    border-color: #eab308;
+    color: #fde047;
+}
+
+kbd.btn-hp {
+    background: rgba(16, 185, 129, 0.22);
+    border-color: #10b981;
+    color: #6ee7b7;
+}
+
+kbd.btn-hk {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+kbd.btn-evade,
+kbd.btn-max {
+    background: rgba(168, 85, 247, 0.22);
+    border-color: #a855f7;
+    color: #d8b4fe;
+}
