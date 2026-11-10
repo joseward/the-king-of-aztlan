@@ -56,15 +56,27 @@ class HUD {
         // 1. Bloque Superior (Retratos de esquina, Barras de Salud y Caja Central de Timer)
         this._drawTopNeoGeoHUD(ctx, fighter1, fighter2, team1, team2, team1Index, team2Index, timerSeconds);
 
-        // 2. Bloque Inferior (Dígito de Stock, Cápsula MAXIMUM, ST-1 y CREDIT)
+        // 2. Bloque Inferior (Dígito de Stock, Cápsula MÁXIMO, NV-1 y CRÉDITO)
         this._drawBottomNeoGeoPowerHUD(ctx, 1, fighter1);
         this._drawBottomNeoGeoPowerHUD(ctx, 2, fighter2);
 
-        // Etiquetas inferiores arcade (ST-X en el centro, CREDIT bajo las barras)
-        const stLabel = matchState.currentStageNumber ? `ST-${matchState.currentStageNumber}` : 'ST-1';
-        this._drawPixelString(ctx, stLabel, this.width * 0.5, this.height - 8, 13, '#e2e8f0', '#090a14', 'center');
-        this._drawPixelString(ctx, 'CREDIT  02', 142, this.height - 4, 12, '#7898ff', '#090a14', 'left');
-        this._drawPixelString(ctx, 'CREDIT  02', this.width - 142, this.height - 4, 12, '#7898ff', '#090a14', 'right');
+        // Etiquetas inferiores arcade (NV-X y botón de Menú en el centro, CRÉDITOS bajo las barras)
+        const stLabel = matchState.currentStageNumber ? `NV-${matchState.currentStageNumber}` : 'NV-1';
+        this._drawPixelString(ctx, stLabel, this.width * 0.5, this.height - 34, 12, '#ffea00', '#090a14', 'center');
+
+        // Botón interactivo de Menú / Pausa en la parte central inferior del combate
+        const menuBtnX = this.width * 0.5 - 76;
+        const menuBtnY = this.height - 26;
+        const menuBtnW = 152;
+        const menuBtnH = 22;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(menuBtnX - 1, menuBtnY - 1, menuBtnW + 2, menuBtnH + 2);
+        ctx.fillStyle = '#181432';
+        ctx.fillRect(menuBtnX, menuBtnY, menuBtnW, menuBtnH);
+        this._drawPixelString(ctx, '☰ MENÚ (ESC/START)', this.width * 0.5, menuBtnY + 15, 11, '#70f8a0', '#000000', 'center');
+
+        this._drawPixelString(ctx, 'CRÉDITOS 02', 142, this.height - 4, 12, '#7898ff', '#090a14', 'left');
+        this._drawPixelString(ctx, 'CRÉDITOS 02', this.width - 142, this.height - 4, 12, '#7898ff', '#090a14', 'right');
 
         // 3. Contadores de Combo y Banners de Cancelación
         this._drawComboAndBanners(ctx, fighter1, fighter2);
@@ -99,13 +111,13 @@ class HUD {
         const p2BarX = timerRight;
         const p2BarW = p2PortraitX - timerRight;
 
-        // A. Textos superiores "WIN:00" y Puntuación "19200" en rojo/coral con borde negro
-        const winStrP1 = `WIN:${String(this.p1Wins).padStart(2, '0')}`;
+        // A. Textos superiores "VICT:00" y Puntuación "19200" en rojo/coral con borde negro
+        const winStrP1 = `VICT:${String(this.p1Wins).padStart(2, '0')}`;
         const scoreStrP1 = String(this.p1Score + fighter2.comboDamageTaken * 10).padStart(5, '0');
         this._drawPixelString(ctx, winStrP1, p1BarX + 10, barY - 6, 15, '#ff7555', '#120814', 'left');
         this._drawPixelString(ctx, scoreStrP1, timerLeft - 12, barY - 6, 16, '#ff7555', '#120814', 'right');
 
-        const winStrP2 = `WIN:${String(this.p2Wins).padStart(2, '0')}`;
+        const winStrP2 = `VICT:${String(this.p2Wins).padStart(2, '0')}`;
         const scoreStrP2 = String(this.p2Score + fighter1.comboDamageTaken * 10).padStart(5, '0');
         this._drawPixelString(ctx, scoreStrP2, timerRight + 12, barY - 6, 16, '#ff7555', '#120814', 'left');
         this._drawPixelString(ctx, winStrP2, p2PortraitX - 10, barY - 6, 15, '#ff7555', '#120814', 'right');
@@ -296,9 +308,9 @@ class HUD {
             }
         }
 
-        // 3. Texto "MAXIMUM" superpuesto cuando tiene Stock listo o Modo MAX activo (como en la imagen)
+        // 3. Texto "MÁXIMO" superpuesto cuando tiene Stock listo o Modo MAX activo
         if (stocks >= 1 || fighter.isMaxMode) {
-            const label = fighter.isMaxMode ? 'MAX MODE' : 'MAXIMUM';
+            const label = fighter.isMaxMode ? 'MODO MAX' : 'MÁXIMO';
             this._drawPixelString(
                 ctx,
                 label,
@@ -337,8 +349,8 @@ class HUD {
     _drawComboCallout(ctx, attackerIndex, hits, damage) {
         const isP1 = attackerIndex === 1;
         const x = isP1 ? 26 : this.width - 26;
-        this._drawPixelString(ctx, `${hits} HITS!`, x, 128, 28, '#ffea00', '#14081c', isP1 ? 'left' : 'right');
-        this._drawPixelString(ctx, `DMG ${damage}`, x, 146, 13, '#ffffff', '#090a14', isP1 ? 'left' : 'right');
+        this._drawPixelString(ctx, `¡${hits} GOLPES!`, x, 128, 28, '#ffea00', '#14081c', isP1 ? 'left' : 'right');
+        this._drawPixelString(ctx, `DAÑO ${damage}`, x, 146, 13, '#ffffff', '#090a14', isP1 ? 'left' : 'right');
     }
 
     _drawCenterAnnouncement(ctx, announcement) {
@@ -393,9 +405,9 @@ class HUD {
         ctx.fillStyle = '#120a20';
         ctx.fillRect(cx - 326, 90, 652, 92);
 
-        this._drawPixelString(ctx, 'SNK / NEO-GEO MVS STYLE 2D ENGINE', cx, 112, 13, '#70f8a0', '#000000', 'center');
+        this._drawPixelString(ctx, 'MOTOR 2D ESTILO SNK / NEO-GEO MVS', cx, 112, 13, '#70f8a0', '#000000', 'center');
         this._drawPixelString(ctx, 'THE KING OF AZTLAN', cx, 150, 42, '#ffbe0b', '#14081c', 'center');
-        this._drawPixelString(ctx, '12 STAGES TOURNAMENT  •  FINAL BOSS: OMEGA RUGAL', cx, 174, 14, '#ff4d88', '#000000', 'center');
+        this._drawPixelString(ctx, 'TORNEO DE 12 NIVELES  •  JEFE FINAL: OMEGA RUGAL', cx, 174, 14, '#ff4d88', '#000000', 'center');
 
         // Dos peleadores de complexión humana en pose de guardia frente a frente en la intro
         const demoP1 = new window.Fighter({
@@ -421,15 +433,15 @@ class HUD {
 
         this._drawPixelString(ctx, 'VS', cx, 345, 36, '#ffea00', '#b8001f', 'center');
 
-        // Texto parpadeante "PRESS START / ENTER OR CLICK"
+        // Texto parpadeante en español
         if (Math.floor(globalFrame / 22) % 2 === 0) {
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(cx - 252, 460, 504, 38);
+            ctx.fillRect(cx - 268, 460, 536, 38);
             ctx.fillStyle = '#181028';
-            ctx.fillRect(cx - 248, 464, 496, 30);
+            ctx.fillRect(cx - 264, 464, 528, 30);
             this._drawPixelString(
                 ctx,
-                'PRESS ENTER / START / CLICK TO INSERT COIN',
+                'PRESIONA ENTER / START / PUÑO (U) O HAZ CLIC',
                 cx,
                 485,
                 16,
@@ -439,7 +451,7 @@ class HUD {
             );
         }
 
-        this._drawPixelString(ctx, 'CREDIT  02', cx, 524, 14, '#7898ff', '#000000', 'center');
+        this._drawPixelString(ctx, 'CRÉDITOS  02', cx, 524, 14, '#7898ff', '#000000', 'center');
         ctx.restore();
     }
 
@@ -457,17 +469,24 @@ class HUD {
             ctx.fillRect(0, y, this.width, 4);
         }
 
+        // Botón superior izquierdo para volver a la pantalla de título
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(26, 22, 184, 34);
+        ctx.fillStyle = '#261838';
+        ctx.fillRect(28, 24, 180, 30);
+        this._drawPixelString(ctx, '◄ INICIO (ESC / P)', 118, 44, 12, '#ffea00', '#000000', 'center');
+
         const cx = Math.floor(this.width * 0.5);
-        this._drawPixelString(ctx, 'THE KING OF AZTLAN — SELECT MODE', cx, 56, 28, '#ffbe0b', '#090a14', 'center');
-        this._drawPixelString(ctx, 'USA W/S, FLECHAS, MANDO O CLIC PARA ELEGIR MODO DE JUEGO', cx, 84, 13, '#70f8a0', '#090a14', 'center');
+        this._drawPixelString(ctx, 'THE KING OF AZTLAN — MODOS DE PELEA', cx, 54, 25, '#ffbe0b', '#090a14', 'center');
+        this._drawPixelString(ctx, 'USA W/S, FLECHAS O MANDO PARA MOVERTE • U/ENTER/START: ELEGIR • P/ESC/B: VOLVER', cx, 84, 12, '#70f8a0', '#090a14', 'center');
 
         const modes = [
             {
-                title: '1. ARCADE TOURNAMENT (12 NIVELES — JEFE FINAL: RUGAL)',
+                title: '1. TORNEO ARCADE (12 NIVELES — JEFE FINAL: RUGAL)',
                 desc: 'Elige a tus 3 luchadores y supera los 12 niveles hasta enfrentar a OMEGA RUGAL.'
             },
             {
-                title: '2. TEAM VS CPU (PELEA LIBRE 3 VS 3)',
+                title: '2. EQUIPO VS CPU (PELEA LIBRE 3 VS 3)',
                 desc: 'Combate directo por equipos 3 contra 3 eligiendo ambos bandos.'
             },
             {
@@ -475,7 +494,7 @@ class HUD {
                 desc: 'Duelo multijugador local con teclado o 2 mandos USB / Bluetooth.'
             },
             {
-                title: '4. DESAFIO FINAL: NIVEL 12 VS OMEGA RUGAL',
+                title: '4. DESAFÍO FINAL: NIVEL 12 VS OMEGA RUGAL',
                 desc: 'Salta directamente al Nivel 12 para poner a prueba tu equipo contra Rugal.'
             }
         ];
@@ -518,7 +537,7 @@ class HUD {
             );
         }
 
-        this._drawPixelString(ctx, 'PRESIONA U / ENTER / START O HAZ CLIC EN UNA OPCIÓN', cx, 508, 14, '#ff4d88', '#000000', 'center');
+        this._drawPixelString(ctx, 'CONFIRMAR: U / ENTER / START / A-CRUZ   •   ATRÁS: P / ESC / B-CÍRCULO', cx, 508, 13, '#ff4d88', '#000000', 'center');
         ctx.restore();
     }
 
@@ -537,10 +556,10 @@ class HUD {
         const cx = Math.floor(this.width * 0.5);
         this._drawPixelString(
             ctx,
-            isBoss ? 'FINAL STAGE 12 / 12 — WARNING: BOSS APPROACHING!' : `ARCADE TOURNAMENT — STAGE ${stageNumber} OF 12`,
+            isBoss ? '¡NIVEL FINAL 12 / 12 — ALERTA: SE ACERCA EL JEFE FINAL!' : `TORNEO ARCADE — NIVEL ${stageNumber} DE 12`,
             cx,
             44,
-            24,
+            23,
             isBoss ? '#ff0044' : '#ffbe0b',
             '#000000',
             'center'
@@ -568,7 +587,7 @@ class HUD {
 
             this._drawPixelString(
                 ctx,
-                isRugalStage ? 'BOSS' : `ST-${s}`,
+                isRugalStage ? 'JEFE' : `NV-${s}`,
                 sx + stepW * 0.5,
                 barY + 18,
                 11,
@@ -578,7 +597,7 @@ class HUD {
             );
             this._drawPixelString(
                 ctx,
-                isCleared ? 'WIN' : isCurrent ? 'NOW' : isRugalStage ? 'RUGAL' : '---',
+                isCleared ? 'GANÓ' : isCurrent ? 'HOY' : isRugalStage ? 'RUGAL' : '---',
                 sx + stepW * 0.5,
                 barY + 34,
                 10,
@@ -607,7 +626,7 @@ class HUD {
         } else {
             this._drawPixelString(
                 ctx,
-                `PREPARANDO COMBATE DE NIVEL ${stageNumber}... ¡LISTOS PARA PELEAR!`,
+                `PREPARANDO COMBATE DE NIVEL ${stageNumber}... ¡PRESIONA U / START O ESPERA!`,
                 cx,
                 405,
                 15,
@@ -616,6 +635,17 @@ class HUD {
                 'center'
             );
         }
+
+        this._drawPixelString(
+            ctx,
+            'PRESIONA ESC / SELECT PARA VOLVER AL MENÚ DE MODOS DE PELEA',
+            cx,
+            485,
+            13,
+            '#70f8a0',
+            '#000000',
+            'center'
+        );
 
         ctx.restore();
     }
@@ -689,10 +719,10 @@ class HUD {
         this._drawPixelString(
             ctx,
             isOnline
-                ? `ONLINE 1 VS 1 (SALA: ${roomCode}) — ERES ${onlineRole === 'HOST' ? 'JUGADOR 1 (1P)' : 'JUGADOR 2 (2P)'}`
-                : 'THE KING OF AZTLAN — 42 FIGHTERS & 11 OFFICIAL TEAMS',
+                ? `EN LÍNEA 1 VS 1 (SALA: ${roomCode}) — ERES ${onlineRole === 'HOST' ? 'JUGADOR 1 (1P)' : 'JUGADOR 2 (2P)'}`
+                : 'THE KING OF AZTLAN — SELECCIÓN DE EQUIPOS (3 VS 3)',
             this.width * 0.5,
-            28,
+            26,
             20,
             isOnline ? '#38b6ff' : '#ffbe0b',
             '#14081c',
@@ -704,7 +734,7 @@ class HUD {
             const myTeam = onlineRole === 'HOST' ? team1 : team2;
             const otherTeam = onlineRole === 'HOST' ? team2 : team1;
             if (myTeam.length < 3) {
-                statusMsg = `ELIGE TUS 3 LUCHADORES (${myTeam.length}/3) — RIVAL: (${otherTeam.length}/3)`;
+                statusMsg = `ELIGE TUS 3 LUCHADORES (${myTeam.length}/3) — RIVAL: (${otherTeam.length}/3) • P/ESC: QUITAR`;
             } else if (otherTeam.length < 3) {
                 statusMsg = `¡TU EQUIPO LISTO (3/3)! ESPERANDO AL RIVAL (${otherTeam.length}/3)...`;
             } else {
@@ -712,15 +742,15 @@ class HUD {
             }
         } else {
             statusMsg = team1.length < 3
-                ? `ELIGE TUS 3 PERSONAJES (${team1.length}/3) — CLIC EN RETRATO O EN EL NOMBRE DEL EQUIPO COMPLETO`
+                ? `ELIGE 3 PERSONAJES (${team1.length}/3) • U/CLIC: ELEGIR • P/ESC/B-CÍRCULO: QUITAR O VOLVER A MODOS`
                 : (!isArcade12 && team2.length < 3)
-                    ? `EQUIPO 2: ELIGE PERSONAJE ${team2.length + 1} DE 3`
-                    : '¡EQUIPO COMPLETO! HAZ CLIC EN "¡INICIAR PELEA!" O PRESIONA START / ENTER';
+                    ? `EQUIPO 2: ELIGE PERSONAJE ${team2.length + 1} DE 3 • P/ESC: QUITAR O VOLVER`
+                    : '¡EQUIPO COMPLETO! PRESIONA ENTER / START O HAZ CLIC EN "¡PELEAR!"';
         }
-        this._drawPixelString(ctx, statusMsg, this.width * 0.5, 50, 12, '#70f8a0', '#090a14', 'center');
+        this._drawPixelString(ctx, statusMsg, this.width * 0.5, 48, 11, '#70f8a0', '#090a14', 'center');
 
         // 1. Cabeceras de los 11 Equipos Oficiales (Clic para elegir los 3 integrantes del equipo)
-        const shortTeamLabels = ['JAPAN', 'F.FURY', 'A.O.F', 'IKARI', 'PSYCHO', 'WOMEN', 'KOREA', "'96 BOSS", 'OROCHI', 'AGENTS', 'NESTS'];
+        const shortTeamLabels = ['JAPÓN', 'F.FURY', 'A.O.F', 'IKARI', 'PSYCHO', 'MUJERES', 'COREA', 'JEFES 96', 'OROCHI', 'AGENTES', 'NESTS'];
         for (let col = 0; col < 11; col++) {
             const hr = this.getOfficialTeamHeaderRect(col);
             ctx.fillStyle = '#2563eb';
@@ -730,8 +760,8 @@ class HUD {
             this._drawPixelString(ctx, shortTeamLabels[col], hr.x + hr.w * 0.5, hr.y + 14, 10, '#ffea00', '#000000', 'center');
         }
 
-        // Etiqueta lateral para la fila de Edit Characters & Boss
-        this._drawPixelString(ctx, 'EDIT►', 68, 320, 12, '#ff4d88', '#000000', 'center');
+        // Etiqueta lateral para la fila de Personajes Edit & Jefe
+        this._drawPixelString(ctx, 'EXTRA►', 68, 320, 11, '#ff4d88', '#000000', 'center');
 
         // 2. Cuadrícula de los 42 Personajes
         for (let i = 0; i < roster.length; i++) {
@@ -776,11 +806,11 @@ class HUD {
             if (p1Slot !== -1) {
                 ctx.fillStyle = '#16a34a';
                 ctx.fillRect(rect.x + 45, rect.y + 4, 28, 16);
-                this._drawPixelString(ctx, `${p1Slot + 1}P1`, rect.x + 59, rect.y + 16, 10, '#ffffff', '#000', 'center');
+                this._drawPixelString(ctx, `${p1Slot + 1}º1P`, rect.x + 59, rect.y + 16, 10, '#ffffff', '#000', 'center');
             } else if (p2Slot !== -1) {
                 ctx.fillStyle = '#e11d48';
                 ctx.fillRect(rect.x + 45, rect.y + 4, 28, 16);
-                this._drawPixelString(ctx, `${p2Slot + 1}P2`, rect.x + 59, rect.y + 16, 10, '#ffffff', '#000', 'center');
+                this._drawPixelString(ctx, `${p2Slot + 1}º2P`, rect.x + 59, rect.y + 16, 10, '#ffffff', '#000', 'center');
             }
         }
 
@@ -801,32 +831,42 @@ class HUD {
         if (char) {
             this._drawCornerPortrait(ctx, char, x + 12, y + 12, 76, false);
             this._drawPixelString(ctx, char.name, x + 100, y + 26, 16, '#ffea00', '#000', 'left');
-            this._drawPixelString(ctx, `${char.teamName} • HP:${char.stats.maxHp}`, x + 100, y + 44, 11, '#70f8a0', '#000', 'left');
+            this._drawPixelString(ctx, `${char.teamName} • SALUD:${char.stats.maxHp}`, x + 100, y + 44, 11, '#70f8a0', '#000', 'left');
             this._drawPixelString(ctx, `236+P: ${char.moveset.special_QCF_P.name.slice(0, 24)}`, x + 100, y + 64, 10, '#cbd5e1', '#000', 'left');
             this._drawPixelString(ctx, `623+P: ${char.moveset.special_DP_P.name.slice(0, 24)}`, x + 100, y + 80, 10, '#cbd5e1', '#000', 'left');
-            this._drawPixelString(ctx, `SUPER: ${char.moveset.super_DM.name.slice(0, 24)}`, x + 100, y + 96, 10, '#ff4d88', '#000', 'left');
+            this._drawPixelString(ctx, `SÚPER: ${char.moveset.super_DM.name.slice(0, 24)}`, x + 100, y + 96, 10, '#ff4d88', '#000', 'left');
         }
 
-        // Botón "¡INICIAR PELEA!" y Botón "LIMPIAR EQUIPO"
-        const btnStartX = x + 12;
+        // 3 Botones inferiores: "¡PELEAR!" (x+8..x+140), "LIMPIAR" (x+148..x+232), "◄ MODOS" (x+240..x+328)
+        const btnStartX = x + 8;
         const btnStartY = y + 114;
-        const btnStartW = 198;
+        const btnStartW = 132;
         const btnStartH = 40;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(btnStartX - 2, btnStartY - 2, btnStartW + 4, btnStartH + 4);
         ctx.fillStyle = '#e11d48';
         ctx.fillRect(btnStartX, btnStartY, btnStartW, btnStartH);
-        this._drawPixelString(ctx, '¡INICIAR PELEA!', btnStartX + btnStartW * 0.5, btnStartY + 25, 14, '#ffffff', '#000', 'center');
+        this._drawPixelString(ctx, '¡PELEAR!', btnStartX + btnStartW * 0.5, btnStartY + 25, 13, '#ffffff', '#000', 'center');
 
-        const btnClearX = x + 220;
+        const btnClearX = x + 148;
         const btnClearY = y + 114;
-        const btnClearW = 104;
+        const btnClearW = 84;
         const btnClearH = 40;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(btnClearX - 2, btnClearY - 2, btnClearW + 4, btnClearH + 4);
         ctx.fillStyle = '#334155';
         ctx.fillRect(btnClearX, btnClearY, btnClearW, btnClearH);
-        this._drawPixelString(ctx, 'LIMPIAR', btnClearX + btnClearW * 0.5, btnClearY + 25, 12, '#ffea00', '#000', 'center');
+        this._drawPixelString(ctx, 'LIMPIAR', btnClearX + btnClearW * 0.5, btnClearY + 25, 11, '#ffea00', '#000', 'center');
+
+        const btnBackX = x + 240;
+        const btnBackY = y + 114;
+        const btnBackW = 88;
+        const btnBackH = 40;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(btnBackX - 2, btnBackY - 2, btnBackW + 4, btnBackH + 4);
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(btnBackX, btnBackY, btnBackW, btnBackH);
+        this._drawPixelString(ctx, '◄ MODOS', btnBackX + btnBackW * 0.5, btnBackY + 25, 11, '#70f8a0', '#000', 'center');
     }
 
     _drawCompactTeamPanel(ctx, playerIndex, team, x, y, w, h) {
@@ -838,7 +878,7 @@ class HUD {
 
         this._drawPixelString(
             ctx,
-            isP1 ? '1P TEAM (ELIGE 3)' : '2P / RIVAL TEAM',
+            isP1 ? 'EQUIPO 1P (ELIGE 3)' : 'EQUIPO 2P / RIVAL',
             x + 12,
             y + 20,
             13,
@@ -860,10 +900,10 @@ class HUD {
             if (member) {
                 const pCanv = window.PixelArtRenderer.getPortraitCanvas(member, 64, !isP1);
                 ctx.drawImage(pCanv, sx + 8, sy + 8);
-                this._drawPixelString(ctx, `${slot + 1}ST`, sx + 40, sy + 88, 11, '#ffea00', '#000', 'center');
+                this._drawPixelString(ctx, `${slot + 1}º`, sx + 40, sy + 88, 11, '#ffea00', '#000', 'center');
                 this._drawPixelString(ctx, member.name.slice(0, 8), sx + 40, sy + 106, 10, '#ffffff', '#000', 'center');
             } else {
-                this._drawPixelString(ctx, `SLOT ${slot + 1}`, sx + 40, sy + 64, 11, '#64748b', '#000', 'center');
+                this._drawPixelString(ctx, `VACÍO ${slot + 1}`, sx + 40, sy + 64, 11, '#64748b', '#000', 'center');
             }
         }
     }
@@ -880,7 +920,7 @@ class HUD {
 
         this._drawPixelString(
             ctx,
-            isP1 ? '1P TEAM ORDER (1ST / 2ND / 3RD)' : '2P TEAM ORDER (1ST / 2ND / 3RD)',
+            isP1 ? 'ORDEN EQUIPO 1P (1º / 2º / 3º)' : 'ORDEN EQUIPO 2P (1º / 2º / 3º)',
             x + 14,
             y + 22,
             13,
@@ -902,12 +942,74 @@ class HUD {
             if (member) {
                 const pCanv = window.PixelArtRenderer.getPortraitCanvas(member, 48, false);
                 ctx.drawImage(pCanv, sx + 6, sy + 11);
-                this._drawPixelString(ctx, `${slot + 1}ST`, sx + 60, sy + 28, 12, '#ffbe0b', '#000', 'left');
+                this._drawPixelString(ctx, `${slot + 1}º`, sx + 60, sy + 28, 12, '#ffbe0b', '#000', 'left');
                 this._drawPixelString(ctx, member.name.slice(0, 6), sx + 58, sy + 48, 11, '#ffffff', '#000', 'left');
             } else {
-                this._drawPixelString(ctx, `SLOT ${slot + 1}`, sx + 54, sy + 40, 12, '#64748b', '#000', 'center');
+                this._drawPixelString(ctx, `VACÍO ${slot + 1}`, sx + 54, sy + 40, 12, '#64748b', '#000', 'center');
             }
         }
+    }
+
+    /**
+     * Dibuja el Menú de Pausa y Navegación durante el combate (controlado con Teclado, Mando o Clic).
+     */
+    drawPauseMenuOverlay(ctx, pauseCursor = 0) {
+        window.PixelArtRendererClass.enforcePixelCrispness(ctx);
+        ctx.save();
+
+        ctx.fillStyle = 'rgba(6, 8, 20, 0.82)';
+        ctx.fillRect(0, 0, this.width, this.height);
+
+        const cx = Math.floor(this.width * 0.5);
+        const modalW = 540;
+        const modalH = 340;
+        const mx = cx - modalW * 0.5;
+        const my = Math.floor((this.height - modalH) * 0.5);
+
+        ctx.fillStyle = '#ffbe0b';
+        ctx.fillRect(mx - 4, my - 4, modalW + 8, modalH + 8);
+        ctx.fillStyle = '#12152e';
+        ctx.fillRect(mx, my, modalW, modalH);
+
+        this._drawPixelString(ctx, 'PAUSA / MENÚ DE NAVEGACIÓN', cx, my + 36, 22, '#ffbe0b', '#000000', 'center');
+        this._drawPixelString(ctx, 'USA W/S, FLECHAS O MANDO • U/ENTER/START: ELEGIR', cx, my + 60, 11, '#70f8a0', '#000000', 'center');
+
+        const options = [
+            '1. CONTINUAR PELEA',
+            '2. CAMBIAR PERSONAJES (SELECCIÓN DE EQUIPOS)',
+            '3. CAMBIAR MODO DE PELEA (MENÚ DE MODOS)',
+            '4. REINICIAR COMBATE ACTUAL',
+            '5. VOLVER A LA PANTALLA DE TÍTULO'
+        ];
+
+        const btnW = 472;
+        const btnH = 40;
+        const startY = my + 82;
+        const gap = 10;
+
+        for (let i = 0; i < options.length; i++) {
+            const bx = cx - btnW * 0.5;
+            const by = startY + i * (btnH + gap);
+            const selected = i === pauseCursor;
+
+            ctx.fillStyle = selected ? '#ffea00' : '#475569';
+            ctx.fillRect(bx - 2, by - 2, btnW + 4, btnH + 4);
+            ctx.fillStyle = selected ? '#2a183c' : '#181e38';
+            ctx.fillRect(bx, by, btnW, btnH);
+
+            this._drawPixelString(
+                ctx,
+                selected ? `► ${options[i]}` : `  ${options[i]}`,
+                bx + 18,
+                by + 25,
+                14,
+                selected ? '#ffea00' : '#ffffff',
+                '#000000',
+                'left'
+            );
+        }
+
+        ctx.restore();
     }
 
     /**

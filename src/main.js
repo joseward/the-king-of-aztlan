@@ -15,6 +15,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Controles de Marquesina Arcade
     const btnTitleScreen = document.getElementById('btnTitleScreen');
+    const btnModeSelect = document.getElementById('btnModeSelect');
+    const btnTeamSelect = document.getElementById('btnTeamSelect');
     const btnOnlineLobby = document.getElementById('btnOnlineLobby');
     const btnToggleAudio = document.getElementById('btnToggleAudio');
     const btnFullscreen = document.getElementById('btnFullscreen');
@@ -36,7 +38,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (btnTitleScreen) {
         btnTitleScreen.addEventListener('click', () => {
+            engine.isPaused = false;
             engine.openTitleScreen();
+            canvas.focus();
+        });
+    }
+
+    if (btnModeSelect) {
+        btnModeSelect.addEventListener('click', () => {
+            engine.isPaused = false;
+            engine.openModeSelect();
+            canvas.focus();
+        });
+    }
+
+    if (btnTeamSelect) {
+        btnTeamSelect.addEventListener('click', () => {
+            engine.isPaused = false;
+            engine.openTeamSelect();
             canvas.focus();
         });
     }
@@ -135,6 +154,30 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const syncFullscreenSizing = () => {
+        const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+        if (cabinetScreen) {
+            cabinetScreen.classList.toggle('is-fullscreen', isFs);
+        }
+        if (btnFullscreen) {
+            btnFullscreen.textContent = isFs ? '⛶ Salir Pantalla Completa' : '⛶ Pantalla Completa';
+        }
+        if (isFs) {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const scale = Math.min(vw / 960, vh / 540);
+            canvas.style.width = `${Math.floor(960 * scale)}px`;
+            canvas.style.height = `${Math.floor(540 * scale)}px`;
+            canvas.style.maxWidth = '100vw';
+            canvas.style.maxHeight = '100vh';
+        } else {
+            canvas.style.width = '';
+            canvas.style.height = '';
+            canvas.style.maxWidth = '';
+            canvas.style.maxHeight = '';
+        }
+    };
+
     if (btnFullscreen) {
         btnFullscreen.addEventListener('click', () => {
             const target = cabinetScreen || canvas;
@@ -155,9 +198,12 @@ window.addEventListener('DOMContentLoaded', () => {
             canvas.focus();
         });
 
-        document.addEventListener('fullscreenchange', () => {
-            const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-            btnFullscreen.textContent = isFs ? '⛶ Salir Pantalla Completa' : '⛶ Pantalla Completa';
+        document.addEventListener('fullscreenchange', syncFullscreenSizing);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenSizing);
+        window.addEventListener('resize', () => {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                syncFullscreenSizing();
+            }
         });
     }
 

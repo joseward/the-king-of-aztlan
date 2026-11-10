@@ -638,7 +638,7 @@ class Fighter {
                     this.isMaxMode = false;
                     this.maxModeTimer = 0;
                     input.consumeEntries(ppCheck.matched ? ppCheck.entries : maxBtnCheck.entries);
-                    this._startMove('super_SDM', FighterState.SUPER, isCanceling ? 'MAX SUPER CANCEL!' : 'MAX DESPERATION!');
+                    this._startMove('super_SDM', FighterState.SUPER, isCanceling ? '¡CANCELACIÓN SÚPER MAX!' : '¡DESESPERACIÓN MAX!');
                     if (matchCallbacks?.triggerSuperFreeze) {
                         matchCallbacks.triggerSuperFreeze(this, true);
                     }
@@ -657,8 +657,8 @@ class Fighter {
                     const usedEntries = cdCheck.matched ? cdCheck.entries : (pCheck.matched ? pCheck.entries : kCheck.entries);
                     input.consumeEntries(usedEntries);
                     const label = isCanceling && this.state === FighterState.SPECIAL
-                        ? 'SUPER CANCEL!'
-                        : 'DESPERATION MOVE!';
+                        ? '¡SÚPER CANCELACIÓN!'
+                        : '¡ATAQUE DE DESESPERACIÓN!';
                     this._startMove('super_DM', FighterState.SUPER, label);
                     if (matchCallbacks?.triggerSuperFreeze) {
                         matchCallbacks.triggerSuperFreeze(this, false);
@@ -678,7 +678,7 @@ class Fighter {
             this.isMaxMode = true;
             this.maxModeTimer = this.maxModeMaxDuration;
             input.consumeEntries(maxActCheck.entries);
-            this.lastCancelType = isCanceling ? 'MAX CANCEL!' : 'MAX MODE!';
+            this.lastCancelType = isCanceling ? '¡CANCELACIÓN MAX!' : '¡MODO MAX!';
             window.AudioSynth.play('max');
             if (matchCallbacks?.addBannerEffect) {
                 matchCallbacks.addBannerEffect(this.playerIndex, this.lastCancelType, '#ffea00');
@@ -703,7 +703,7 @@ class Fighter {
                 if (btnMatch.matched && (!canMaxFreeCancel || this.currentMoveKey !== 'special_DP_P')) {
                     input.consumeEntries(btnMatch.entries);
                     this._applyMaxFreeCancelCost(canMaxFreeCancel, matchCallbacks);
-                    this._startMove('special_DP_P', FighterState.SPECIAL, isCanceling ? 'SPECIAL CANCEL!' : '');
+                    this._startMove('special_DP_P', FighterState.SPECIAL, isCanceling ? '¡CANCELACIÓN ESPECIAL!' : '');
                     window.AudioSynth.play('special');
                     return true;
                 }
@@ -715,7 +715,7 @@ class Fighter {
                 if (pBtn.matched && (!canMaxFreeCancel || this.currentMoveKey !== 'special_QCF_P')) {
                     input.consumeEntries(pBtn.entries);
                     this._applyMaxFreeCancelCost(canMaxFreeCancel, matchCallbacks);
-                    this._startMove('special_QCF_P', FighterState.SPECIAL, isCanceling ? 'SPECIAL CANCEL!' : '');
+                    this._startMove('special_QCF_P', FighterState.SPECIAL, isCanceling ? '¡CANCELACIÓN ESPECIAL!' : '');
                     window.AudioSynth.play('special');
                     return true;
                 }
@@ -729,7 +729,7 @@ class Fighter {
                 if (btnMatch.matched && (!canMaxFreeCancel || this.currentMoveKey !== 'special_QCB_K')) {
                     input.consumeEntries(btnMatch.entries);
                     this._applyMaxFreeCancelCost(canMaxFreeCancel, matchCallbacks);
-                    this._startMove('special_QCB_K', FighterState.SPECIAL, isCanceling ? 'SPECIAL CANCEL!' : '');
+                    this._startMove('special_QCB_K', FighterState.SPECIAL, isCanceling ? '¡CANCELACIÓN ESPECIAL!' : '');
                     window.AudioSynth.play('special');
                     return true;
                 }
@@ -750,13 +750,13 @@ class Fighter {
             const lpCheck = input.checkButtonBuffered('LP', globalFrame);
             if (lpCheck.matched) {
                 input.consumeEntries(lpCheck.entries);
-                this._startMove('cmd_6LP', FighterState.ATTACK, isCanceling ? 'COMMAND CANCEL!' : '');
+                this._startMove('cmd_6LP', FighterState.ATTACK, isCanceling ? '¡PUENTE DE COMANDO!' : '');
                 return true;
             }
             const lkCheck = input.checkButtonBuffered('LK', globalFrame);
             if (lkCheck.matched) {
                 input.consumeEntries(lkCheck.entries);
-                this._startMove('cmd_6LK', FighterState.ATTACK, isCanceling ? 'COMMAND CANCEL!' : '');
+                this._startMove('cmd_6LK', FighterState.ATTACK, isCanceling ? '¡PUENTE DE COMANDO!' : '');
                 return true;
             }
         }
@@ -773,7 +773,7 @@ class Fighter {
                         // En el 2do eslabón si sigue presionando LP/LK de cerca, encadena en Fuerte automáticamente para combos fluidos
                         if (this.chainStepCount === 2) {
                             const autoHeavy = lightBtn === 'LP' ? 'close_HP' : 'close_HK';
-                            this._startMove(autoHeavy, FighterState.ATTACK, 'CHAIN COMBO!');
+                            this._startMove(autoHeavy, FighterState.ATTACK, '¡COMBO EN CADENA!');
                         } else {
                             const prefix = isCrouching ? 'crouch' : 'close';
                             this._startMove(`${prefix}_${lightBtn}`, FighterState.ATTACK, '');
@@ -790,7 +790,7 @@ class Fighter {
                         input.consumeEntries(check.entries);
                         this.chainStepCount = 2;
                         const prefix = isCrouching ? 'crouch' : 'close';
-                        this._startMove(`${prefix}_${heavyBtn}`, FighterState.ATTACK, 'CHAIN COMBO!');
+                        this._startMove(`${prefix}_${heavyBtn}`, FighterState.ATTACK, '¡COMBO EN CADENA!');
                         return true;
                     }
                 }
@@ -803,7 +803,7 @@ class Fighter {
                     if (check.matched) {
                         input.consumeEntries(check.entries);
                         const cmdMove = (btn === 'LK' || btn === 'HK') ? 'cmd_6LK' : 'cmd_6LP';
-                        this._startMove(cmdMove, FighterState.ATTACK, 'COMMAND CANCEL!');
+                        this._startMove(cmdMove, FighterState.ATTACK, '¡PUENTE DE COMANDO!');
                         return true;
                     }
                 }
@@ -816,7 +816,7 @@ class Fighter {
                 if (hpCheck.matched || hkCheck.matched) {
                     input.consumeEntries(hpCheck.matched ? hpCheck.entries : hkCheck.entries);
                     const autoSpec = hkCheck.matched ? 'special_QCB_K' : 'special_DP_P';
-                    this._startMove(autoSpec, FighterState.SPECIAL, 'SPECIAL CANCEL!');
+                    this._startMove(autoSpec, FighterState.SPECIAL, '¡CANCELACIÓN ESPECIAL!');
                     window.AudioSynth.play('special');
                     return true;
                 }
@@ -895,9 +895,9 @@ class Fighter {
     _applyMaxFreeCancelCost(isMaxFreeCancel, matchCallbacks) {
         if (isMaxFreeCancel && this.isMaxMode) {
             this.maxModeTimer = Math.max(0, this.maxModeTimer - 110);
-            this.lastCancelType = 'FREE CANCEL!';
+            this.lastCancelType = '¡CANCELACIÓN LIBRE!';
             if (matchCallbacks?.addBannerEffect) {
-                matchCallbacks.addBannerEffect(this.playerIndex, 'FREE CANCEL!', '#00ffc3');
+                matchCallbacks.addBannerEffect(this.playerIndex, '¡CANCELACIÓN LIBRE!', '#00ffc3');
             }
         }
     }

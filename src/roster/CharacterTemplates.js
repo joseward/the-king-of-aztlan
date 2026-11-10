@@ -951,37 +951,37 @@ const BOSS_RUGAL_TEMPLATE = CHARACTER_ROSTER.find(c => c.id === 'rugal');
  * Grupos de Equipos Oficiales para selección rápida o individual en la pantalla de Selección de Personajes.
  */
 const OFFICIAL_TEAMS = [
-    { id: 'japan', name: 'TEAM JAPAN', memberIds: ['kyo', 'benimaru', 'daimon'] },
-    { id: 'fatalfury', name: 'TEAM FATAL FURY', memberIds: ['terry', 'andy', 'joe'] },
-    { id: 'aof', name: 'TEAM ART OF FIGHTING', memberIds: ['ryo', 'robert', 'takuma'] },
-    { id: 'ikari', name: 'TEAM IKARI WARRIORS', memberIds: ['leona', 'ralf', 'clark'] },
-    { id: 'psycho', name: 'TEAM PSYCHO SOLDIER', memberIds: ['athena', 'kensou', 'chin'] },
-    { id: 'women', name: 'TEAM WOMEN FIGHTERS', memberIds: ['mai', 'yuri', 'maylee'] },
-    { id: 'korea', name: 'TEAM KOREA', memberIds: ['kim', 'chang', 'choi'] },
-    { id: 'boss96', name: "TEAM '96 BOSS", memberIds: ['geese', 'krauser', 'mrbig'] },
-    { id: 'orochi97', name: "TEAM '97 SPECIAL (OROCHI)", memberIds: ['yashiro', 'shermie', 'chris'] },
-    { id: 'agents2000', name: 'TEAM 2000 (AGENTS)', memberIds: ['vanessa', 'ramon', 'seth'] },
-    { id: 'nests2001', name: 'TEAM 2001 (NESTS)', memberIds: ['kdash', 'maxima', 'whip'] }
+    { id: 'japan', name: 'EQUIPO JAPÓN', memberIds: ['kyo', 'benimaru', 'daimon'] },
+    { id: 'fatalfury', name: 'EQUIPO FATAL FURY', memberIds: ['terry', 'andy', 'joe'] },
+    { id: 'aof', name: 'EQUIPO ART OF FIGHTING', memberIds: ['ryo', 'robert', 'takuma'] },
+    { id: 'ikari', name: 'EQUIPO IKARI WARRIORS', memberIds: ['leona', 'ralf', 'clark'] },
+    { id: 'psycho', name: 'EQUIPO PSYCHO SOLDIER', memberIds: ['athena', 'kensou', 'chin'] },
+    { id: 'women', name: 'EQUIPO MUJERES LUCHADORAS', memberIds: ['mai', 'yuri', 'maylee'] },
+    { id: 'korea', name: 'EQUIPO COREA', memberIds: ['kim', 'chang', 'choi'] },
+    { id: 'boss96', name: "EQUIPO JEFES '96", memberIds: ['geese', 'krauser', 'mrbig'] },
+    { id: 'orochi97', name: "EQUIPO ESPECIAL '97 (OROCHI)", memberIds: ['yashiro', 'shermie', 'chris'] },
+    { id: 'agents2000', name: 'EQUIPO 2000 (AGENTES)', memberIds: ['vanessa', 'ramon', 'seth'] },
+    { id: 'nests2001', name: 'EQUIPO 2001 (NESTS)', memberIds: ['kdash', 'maxima', 'whip'] }
 ];
 
 /**
- * Escalera de 12 Niveles del Modo Arcade ("THE KING OF AZTLAN - 12 STAGES TOURNAMENT"):
+ * Escalera de 12 Niveles del Modo Arcade ("THE KING OF AZTLAN - TORNEO DE 12 NIVELES"):
  * Niveles 1 al 11 enfrentan a los 11 Equipos Oficiales de KOF 2002;
  * el Nivel 12 enfrenta al Jefe Final OMEGA RUGAL.
  */
 const ARCADE_12_STAGES = [
-    { stage: 1, name: 'STAGE 1: VS TEAM JAPAN (ESAKA)', skyTint: '#242854', aiLevel: 0.45, teamIds: ['kyo', 'benimaru', 'daimon'] },
-    { stage: 2, name: 'STAGE 2: VS TEAM FATAL FURY (SOUTH TOWN)', skyTint: '#1e325c', aiLevel: 0.50, teamIds: ['terry', 'andy', 'joe'] },
-    { stage: 3, name: 'STAGE 3: VS TEAM ART OF FIGHTING (DOJO)', skyTint: '#3a1f54', aiLevel: 0.55, teamIds: ['ryo', 'robert', 'takuma'] },
-    { stage: 4, name: 'STAGE 4: VS TEAM PSYCHO SOLDIER', skyTint: '#4a2434', aiLevel: 0.60, teamIds: ['athena', 'kensou', 'chin'] },
-    { stage: 5, name: 'STAGE 5: VS TEAM WOMEN FIGHTERS', skyTint: '#251a4a', aiLevel: 0.65, teamIds: ['mai', 'yuri', 'maylee'] },
-    { stage: 6, name: 'STAGE 6: VS TEAM KOREA', skyTint: '#1b3b3b', aiLevel: 0.70, teamIds: ['kim', 'chang', 'choi'] },
-    { stage: 7, name: 'STAGE 7: VS TEAM IKARI WARRIORS', skyTint: '#162848', aiLevel: 0.75, teamIds: ['leona', 'ralf', 'clark'] },
-    { stage: 8, name: 'STAGE 8: VS TEAM 2000 (AGENTS)', skyTint: '#3b1538', aiLevel: 0.80, teamIds: ['vanessa', 'ramon', 'seth'] },
-    { stage: 9, name: "STAGE 9: VS TEAM '97 SPECIAL (OROCHI)", skyTint: '#482018', aiLevel: 0.85, teamIds: ['yashiro', 'shermie', 'chris'] },
-    { stage: 10, name: "STAGE 10: VS TEAM '96 BOSS", skyTint: '#1f244d', aiLevel: 0.90, teamIds: ['geese', 'krauser', 'mrbig'] },
-    { stage: 11, name: 'STAGE 11: VS TEAM 2001 (NESTS)', skyTint: '#2d1238', aiLevel: 0.95, teamIds: ['kdash', 'maxima', 'whip'] },
-    { stage: 12, name: 'STAGE 12 (FINAL BOSS): OMEGA RUGAL', skyTint: '#3a0814', aiLevel: 1.00, isBossStage: true, teamIds: ['iori', 'k9999', 'rugal'] }
+    { stage: 1, name: 'NIVEL 1: VS EQUIPO JAPÓN (ESAKA)', skyTint: '#242854', aiLevel: 0.45, teamIds: ['kyo', 'benimaru', 'daimon'] },
+    { stage: 2, name: 'NIVEL 2: VS EQUIPO FATAL FURY (SOUTH TOWN)', skyTint: '#1e325c', aiLevel: 0.50, teamIds: ['terry', 'andy', 'joe'] },
+    { stage: 3, name: 'NIVEL 3: VS EQUIPO ART OF FIGHTING (DOJO)', skyTint: '#3a1f54', aiLevel: 0.55, teamIds: ['ryo', 'robert', 'takuma'] },
+    { stage: 4, name: 'NIVEL 4: VS EQUIPO PSYCHO SOLDIER', skyTint: '#4a2434', aiLevel: 0.60, teamIds: ['athena', 'kensou', 'chin'] },
+    { stage: 5, name: 'NIVEL 5: VS EQUIPO MUJERES LUCHADORAS', skyTint: '#251a4a', aiLevel: 0.65, teamIds: ['mai', 'yuri', 'maylee'] },
+    { stage: 6, name: 'NIVEL 6: VS EQUIPO COREA', skyTint: '#1b3b3b', aiLevel: 0.70, teamIds: ['kim', 'chang', 'choi'] },
+    { stage: 7, name: 'NIVEL 7: VS EQUIPO IKARI WARRIORS', skyTint: '#162848', aiLevel: 0.75, teamIds: ['leona', 'ralf', 'clark'] },
+    { stage: 8, name: 'NIVEL 8: VS EQUIPO 2000 (AGENTES)', skyTint: '#3b1538', aiLevel: 0.80, teamIds: ['vanessa', 'ramon', 'seth'] },
+    { stage: 9, name: "NIVEL 9: VS EQUIPO ESPECIAL '97 (OROCHI)", skyTint: '#482018', aiLevel: 0.85, teamIds: ['yashiro', 'shermie', 'chris'] },
+    { stage: 10, name: "NIVEL 10: VS EQUIPO JEFES '96", skyTint: '#1f244d', aiLevel: 0.90, teamIds: ['geese', 'krauser', 'mrbig'] },
+    { stage: 11, name: 'NIVEL 11: VS EQUIPO 2001 (NESTS)', skyTint: '#2d1238', aiLevel: 0.95, teamIds: ['kdash', 'maxima', 'whip'] },
+    { stage: 12, name: 'NIVEL 12 (JEFE FINAL): OMEGA RUGAL', skyTint: '#3a0814', aiLevel: 1.00, isBossStage: true, teamIds: ['iori', 'k9999', 'rugal'] }
 ];
 
 window.CHARACTER_ROSTER = CHARACTER_ROSTER;

@@ -56,6 +56,8 @@ class GameLoop {
         this.team2 = [];
         this.selectCursor = 0;
         this.selectCursorP2 = 3;
+        this.isPaused = false;
+        this.pauseCursor = 0;
 
         // Estado del combate 3 vs 3
         this.team1Index = 0;
@@ -252,8 +254,8 @@ class GameLoop {
         window.AudioSynth.playBGM(this.currentStageNumber === 12 ? 'boss_rugal' : 'stage');
 
         const stagePrefix = (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL')
-            ? `STAGE ${this.currentStageNumber}/12`
-            : `ROUND ${this.roundNumber}`;
+            ? `NIVEL ${this.currentStageNumber}/12`
+            : `ASALTO ${this.roundNumber}`;
 
         this._beginRoundIntro(stagePrefix, `${this.fighter1.name} VS ${this.fighter2.name}`);
     }
@@ -268,6 +270,54 @@ class GameLoop {
             subtext: subtitle,
             color: this.currentStageNumber === 12 ? '#ff0044' : '#ffbe0b'
         };
+    }
+
+    _executePauseOption(idx) {
+        window.AudioSynth.play('select');
+        this.isPaused = false;
+        if (idx === 0) {
+            return;
+        }
+        if (idx === 1) {
+            this.openTeamSelect();
+        } else if (idx === 2) {
+            this.openModeSelect();
+        } else if (idx === 3) {
+            this.startMatch3v3();
+        } else if (idx === 4) {
+            this.openTitleScreen();
+        }
+    }
+
+    _updatePauseMenu(p1Input, p2Input) {
+        p1Input.updateFrame(this.globalFrame, 1, false);
+        p2Input.updateFrame(this.globalFrame, 1, false);
+
+        if (p1Input.pressed.up || p2Input.pressed.up) {
+            this.pauseCursor = (this.pauseCursor - 1 + 5) % 5;
+            window.AudioSynth.play('select');
+        }
+        if (p1Input.pressed.down || p2Input.pressed.down) {
+            this.pauseCursor = (this.pauseCursor + 1) % 5;
+            window.AudioSynth.play('select');
+        }
+        if (p1Input.pressed.HK || p2Input.pressed.HK) {
+            this.isPaused = false;
+            window.AudioSynth.play('select');
+            return;
+        }
+        if (
+            p1Input.pressed.LP ||
+            p1Input.pressed.LK ||
+            p1Input.pressed.HP ||
+            p2Input.pressed.LP ||
+            p2Input.pressed.LK ||
+            p2Input.pressed.HP ||
+            p1Input.startPressed ||
+            p2Input.startPressed
+        ) {
+            this._executePauseOption(this.pauseCursor);
+        }
     }
 
     /**
@@ -287,9 +337,23 @@ class GameLoop {
         const p1Input = this.inputHandler.getPlayer(1);
         const p2Input = this.inputHandler.getPlayer(2);
 
-        // Atajos desde el mando: SELECT abre Selección de Modo/Equipos
+        // Si el Menú de Pausa/Navegación está abierto, procesarlo con los mismos controles
+        if (this.isPaused) {
+            this._updatePauseMenu(p1Input, p2Input);
+            return;
+        }
+
+        // Atajos desde el mando: SELECT o START durante combate abre el Menú de Navegación
         if (p1Input.selectPressed || p2Input.selectPressed) {
-            this.openModeSelect();
+            if (this.phase === GamePhase.MODE_SELECT) {
+                this.openTitleScreen();
+            } else if (this.phase === GamePhase.TEAM_SELECT) {
+                this.openModeSelect();
+            } else if (this.phase !== GamePhase.TITLE_SCREEN) {
+                this.isPaused = true;
+                this.pauseCursor = 0;
+                window.AudioSynth.play('select');
+            }
             return;
         }
 
@@ -311,9 +375,21 @@ class GameLoop {
         if (this.phase === GamePhase.STAGE_LADDER) {
             this.phaseTimer--;
             p1Input.updateFrame(this.globalFrame, 1, false);
+            if (p1Input.pressed.HK) {
+                this.openModeSelect();
+                return;
+            }
             if (this.phaseTimer <= 0 || p1Input.pressed.LP || p1Input.pressed.HP || p1Input.startPressed) {
                 this.startMatch3v3();
             }
+            return;
+        }
+
+        // Durante el combate activo, presionar START en el mando abre el Menú de Pausa y Navegación
+        if ((p1Input.startPressed || p2Input.startPressed) && this.phase === GamePhase.FIGHTING) {
+            this.isPaused = true;
+            this.pauseCursor = 0;
+            window.AudioSynth.play('select');
             return;
         }
 
@@ -360,8 +436,8 @@ class GameLoop {
             this.phaseTimer--;
             if (this.phaseTimer === 35) {
                 this.announcement = {
-                    text: 'FIGHT!',
-                    subtext: this.currentStageNumber === 12 ? 'FINAL BOSS: OMEGA RUGAL' : `STAGE ${this.currentStageNumber} OF 12`,
+                    text: '¡A PELEAR!',
+                    subtext: this.currentStageNumber === 12 ? 'JEFE FINAL: OMEGA RUGAL' : `NIVEL ${this.currentStageNumber} DE 12`,
                     color: '#00ffc3'
                 };
             }
@@ -398,6 +474,10 @@ class GameLoop {
         if (this.phase === GamePhase.MATCH_OVER) {
             this.fighter1.update(null, this.fighter2, this.globalFrame, null);
             this.fighter2.update(null, this.fighter1, this.globalFrame, null);
+            if (p1Input.pressed.HK || p2Input.pressed.HK) {
+                this.openModeSelect();
+                return;
+            }
             if (p1Input.pressed.LP || p1Input.pressed.HP || p2Input.pressed.LP || p2Input.pressed.HP || p1Input.startPressed || p2Input.startPressed) {
                 if (this.networkManager && this.networkManager.isOnline) {
                     this.networkManager.sendMatchStart();
@@ -428,7 +508,7 @@ class GameLoop {
                 this.screenShakeTimer = 14;
                 this.hud.addBanner(
                     actor.playerIndex,
-                    isMax ? 'MAX DESPERATION!!' : 'SUPER SPECIAL MOVE!',
+                    isMax ? '¡¡DESESPERACIÓN MAX!!' : '¡ATAQUE SÚPER ESPECIAL!',
                     isMax ? '#ff0055' : '#ffbe0b'
                 );
             },
@@ -642,9 +722,9 @@ class GameLoop {
                 this.fighter1.hp = 0;
                 this.fighter1.setState(window.FighterState.KO);
             }
-            this.announcement = { text: 'TIME OVER!', subtext: '', color: '#ff3366' };
+            this.announcement = { text: '¡TIEMPO AGOTADO!', subtext: '', color: '#ff3366' };
         } else {
-            this.announcement = { text: 'K.O.!!', subtext: '', color: '#ff3366' };
+            this.announcement = { text: '¡¡K.O.!!', subtext: '', color: '#ff3366' };
         }
     }
 
@@ -689,14 +769,14 @@ class GameLoop {
 
             if (p1Won && (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL') && this.currentStageNumber >= 12) {
                 this.announcement = {
-                    text: 'OMEGA RUGAL DEFEATED!!',
-                    subtext: '¡ERES EL CAMPEÓN DE THE KING OF AZTLAN! (CLIC O START PARA JUGAR DE NUEVO)',
+                    text: '¡¡OMEGA RUGAL DERROTADO!!',
+                    subtext: '¡CAMPEÓN DE AZTLAN! (U/START: JUGAR DE NUEVO • P/ESC: MODOS)',
                     color: '#ffea00'
                 };
             } else {
                 this.announcement = {
-                    text: p1Won ? `STAGE ${this.currentStageNumber} CLEAR! YOU WIN!` : 'YOU LOSE — CONTINUE?',
-                    subtext: 'Presiona START / U / O o haz clic para reintentar el nivel',
+                    text: p1Won ? `¡NIVEL ${this.currentStageNumber} SUPERADO! ¡GANASTE!` : 'DERROTA — ¿CONTINUAR?',
+                    subtext: 'U/START: REINTENTAR  •  P/ESC/SELECT: VOLVER AL MENÚ DE MODOS',
                     color: p1Won ? '#00ffc3' : '#ff3366'
                 };
             }
@@ -743,7 +823,7 @@ class GameLoop {
         }
 
         this._beginRoundIntro(
-            this.fighter2.template.isBoss ? 'WARNING: OMEGA RUGAL ENTERS!' : 'NEXT CHALLENGER!',
+            this.fighter2.template.isBoss ? '¡ALERTA: ENTRA OMEGA RUGAL!' : '¡SIGUIENTE RETADOR!',
             `${this.fighter1.name} (${this.team1Index + 1}/3)  VS  ${this.fighter2.name} (${this.team2Index + 1}/3)`
         );
     }
@@ -777,6 +857,13 @@ class GameLoop {
         const p2 = this.inputHandler.getPlayer(2);
         p1.updateFrame(this.globalFrame, 1, false);
         p2.updateFrame(this.globalFrame, 1, false);
+
+        // Botón Atrás (P / HK en teclado o B / Círculo en mando) regresa a la Pantalla de Título
+        if (p1.pressed.HK || p2.pressed.HK) {
+            window.AudioSynth.play('select');
+            this.openTitleScreen();
+            return;
+        }
 
         if (p1.pressed.up || p2.pressed.up) {
             this.modeCursor = (this.modeCursor - 1 + 4) % 4;
@@ -861,6 +948,36 @@ class GameLoop {
     }
 
     /**
+     * Quita el último personaje seleccionado o regresa a Modos de Pelea si el equipo está vacío.
+     */
+    _handleTeamSelectBack() {
+        window.AudioSynth.play('select');
+        const isOnline = Boolean(this.networkManager && this.networkManager.isOnline);
+        if (isOnline) {
+            if (this.networkManager.role === 'HOST') {
+                if (this.team1.length > 0) {
+                    this.team1.pop();
+                    this.networkManager.sendTeamUpdate();
+                }
+            } else {
+                if (this.team2.length > 0) {
+                    this.team2.pop();
+                    this.networkManager.sendTeamUpdate();
+                }
+            }
+            return;
+        }
+
+        if (this.team2.length > 0 && this.gameMode !== 'ARCADE_12' && this.gameMode !== 'BOSS_RUGAL') {
+            this.team2.pop();
+        } else if (this.team1.length > 0) {
+            this.team1.pop();
+        } else {
+            this.openModeSelect();
+        }
+    }
+
+    /**
      * Navegación 2D por teclado y mando (Gamepad) en la pantalla de Selección de Equipos (42 personajes).
      */
     _updateTeamSelect() {
@@ -878,6 +995,12 @@ class GameLoop {
             } else {
                 this.startArcadeStage(this.currentStageNumber);
             }
+            return;
+        }
+
+        // Botón Atrás (P / HK en teclado o B / Círculo en mando): quita último personaje o regresa a Modos
+        if (p1.pressed.HK || p2.pressed.HK) {
+            this._handleTeamSelectBack();
             return;
         }
 
@@ -1038,11 +1161,40 @@ class GameLoop {
 
     _bindMenuKeyboardShortcuts() {
         window.addEventListener('keydown', (e) => {
-            // Al presionar cualquier tecla por primera vez en la pantalla de título, iniciar la música Chiptune
+            // Al presionar cualquier tecla por primera vez en la pantalla de título, iniciar la música
             if (this.phase === GamePhase.TITLE_SCREEN && window.AudioSynth.currentTrack !== 'title') {
                 window.AudioSynth.playBGM('title');
             }
+
+            // Teclas Escape o Backspace para regresar o abrir el Menú de Navegación
+            if (e.code === 'Escape' || e.code === 'Backspace') {
+                e.preventDefault();
+                if (this.isPaused) {
+                    this.isPaused = false;
+                    window.AudioSynth.play('select');
+                    return;
+                }
+                if (this.phase === GamePhase.MODE_SELECT) {
+                    this.openTitleScreen();
+                } else if (this.phase === GamePhase.TEAM_SELECT) {
+                    if (e.code === 'Escape') {
+                        this.openModeSelect();
+                    } else {
+                        this._handleTeamSelectBack();
+                    }
+                } else if (this.phase !== GamePhase.TITLE_SCREEN) {
+                    this.isPaused = true;
+                    this.pauseCursor = 0;
+                    window.AudioSynth.play('select');
+                }
+                return;
+            }
+
             if (e.code === 'Enter' || e.code === 'Space') {
+                if (this.isPaused) {
+                    this._executePauseOption(this.pauseCursor);
+                    return;
+                }
                 if (this.phase === GamePhase.TITLE_SCREEN) {
                     this.openModeSelect();
                 } else if (this.phase === GamePhase.MODE_SELECT) {
@@ -1068,12 +1220,39 @@ class GameLoop {
             const mx = (e.clientX - rect.left) * scaleX;
             const my = (e.clientY - rect.top) * scaleY;
 
+            // Si el Menú de Pausa / Navegación está abierto, permitir clic en cualquiera de sus 5 opciones
+            if (this.isPaused) {
+                const cx = this.width * 0.5;
+                const modalH = 340;
+                const modalTop = Math.floor((this.height - modalH) * 0.5);
+                const btnW = 472;
+                const btnH = 40;
+                const startY = modalTop + 82;
+                const gap = 10;
+                for (let i = 0; i < 5; i++) {
+                    const bx = cx - btnW * 0.5;
+                    const by = startY + i * (btnH + gap);
+                    if (mx >= bx && mx <= bx + btnW && my >= by && my <= by + btnH) {
+                        this._executePauseOption(i);
+                        return;
+                    }
+                }
+                return;
+            }
+
             if (this.phase === GamePhase.TITLE_SCREEN) {
                 this.openModeSelect();
                 return;
             }
 
             if (this.phase === GamePhase.MODE_SELECT) {
+                // Clic en botón superior izquierdo "◄ INICIO (ESC / P)"
+                if (mx >= 26 && mx <= 212 && my >= 22 && my <= 58) {
+                    window.AudioSynth.play('select');
+                    this.openTitleScreen();
+                    return;
+                }
+
                 const cx = this.width * 0.5;
                 const boxW = 720;
                 const boxH = 74;
@@ -1092,6 +1271,20 @@ class GameLoop {
 
             if (this.phase === GamePhase.STAGE_LADDER) {
                 this.startMatch3v3();
+                return;
+            }
+
+            // En cualquier fase de combate, clic en el botón inferior central "☰ MENÚ (ESC/START)" abre el menú de navegación
+            if (
+                (this.phase === GamePhase.FIGHTING || this.phase === GamePhase.ROUND_INTRO || this.phase === GamePhase.KO_TRANSITION || this.phase === GamePhase.MATCH_OVER) &&
+                mx >= this.width * 0.5 - 78 &&
+                mx <= this.width * 0.5 + 78 &&
+                my >= this.height - 28 &&
+                my <= this.height
+            ) {
+                this.isPaused = true;
+                this.pauseCursor = 0;
+                window.AudioSynth.play('select');
                 return;
             }
 
@@ -1133,8 +1326,8 @@ class GameLoop {
                 }
             }
 
-            // 3. Verificar clic en el botón "¡INICIAR PELEA!" (panel central inferior)
-            if (mx >= 324 && mx <= 522 && my >= 474 && my <= 514) {
+            // 3. Verificar clic en el botón "¡PELEAR!" (x: 320..452, y: 474..514)
+            if (mx >= 320 && mx <= 452 && my >= 474 && my <= 514) {
                 window.AudioSynth.play('super');
                 if (this.networkManager && this.networkManager.isOnline) {
                     this.networkManager.sendMatchStart();
@@ -1144,8 +1337,8 @@ class GameLoop {
                 return;
             }
 
-            // 4. Verificar clic en el botón "LIMPIAR" (reiniciar selección de equipos)
-            if (mx >= 532 && mx <= 636 && my >= 474 && my <= 514) {
+            // 4. Verificar clic en el botón "LIMPIAR" (x: 460..544, y: 474..514)
+            if (mx >= 460 && mx <= 544 && my >= 474 && my <= 514) {
                 window.AudioSynth.play('select');
                 if (this.networkManager && this.networkManager.isOnline) {
                     if (this.networkManager.role === 'HOST') {
@@ -1158,6 +1351,13 @@ class GameLoop {
                     this.team1 = [];
                     this.team2 = [];
                 }
+                return;
+            }
+
+            // 5. Verificar clic en el botón "◄ MODOS" (x: 552..640, y: 474..514)
+            if (mx >= 552 && mx <= 640 && my >= 474 && my <= 514) {
+                window.AudioSynth.play('select');
+                this.openModeSelect();
                 return;
             }
         });
@@ -1235,7 +1435,7 @@ class GameLoop {
         if (this.phase === GamePhase.STAGE_LADDER) {
             const stages = window.ARCADE_12_STAGES || [];
             const stageCfg = stages[Math.max(0, Math.min(stages.length - 1, this.currentStageNumber - 1))] || {
-                name: `STAGE ${this.currentStageNumber}`
+                name: `NIVEL ${this.currentStageNumber}`
             };
             this.hud.drawStageLadderScreen(ctx, {
                 stageNumber: this.currentStageNumber,
@@ -1243,6 +1443,9 @@ class GameLoop {
                 team1: this.team1,
                 team2: this.team2
             });
+            if (this.isPaused) {
+                this.hud.drawPauseMenuOverlay(ctx, this.pauseCursor);
+            }
             return;
         }
 
@@ -1303,6 +1506,11 @@ class GameLoop {
                 currentStageNumber: this.currentStageNumber,
                 announcement: this.announcement
             });
+        }
+
+        // 7. Menú de Pausa y Navegación superpuesto si está activo
+        if (this.isPaused) {
+            this.hud.drawPauseMenuOverlay(ctx, this.pauseCursor);
         }
     }
 
