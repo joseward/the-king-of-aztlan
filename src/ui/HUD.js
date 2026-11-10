@@ -674,7 +674,7 @@ class HUD {
      * Pantalla Pixel-Art de Selección de los 42 Personajes y 11 Equipos Oficiales (3 vs 3) estilo KOF 2002.
      */
     drawTeamSelectScreen(ctx, selectState) {
-        const { roster, team1, team2, cursorIndex, gameMode } = selectState;
+        const { roster, team1, team2, cursorIndex, p1Cursor, p2Cursor, isOnline, onlineRole, roomCode, gameMode } = selectState;
         window.PixelArtRendererClass.enforcePixelCrispness(ctx);
 
         ctx.save();
@@ -688,20 +688,35 @@ class HUD {
         const isArcade12 = gameMode === 'ARCADE_12' || gameMode === 'BOSS_RUGAL';
         this._drawPixelString(
             ctx,
-            'THE KING OF AZTLAN — 42 FIGHTERS & 11 OFFICIAL TEAMS',
+            isOnline
+                ? `ONLINE 1 VS 1 (SALA: ${roomCode}) — ERES ${onlineRole === 'HOST' ? 'JUGADOR 1 (1P)' : 'JUGADOR 2 (2P)'}`
+                : 'THE KING OF AZTLAN — 42 FIGHTERS & 11 OFFICIAL TEAMS',
             this.width * 0.5,
             28,
-            22,
-            '#ffbe0b',
+            20,
+            isOnline ? '#38b6ff' : '#ffbe0b',
             '#14081c',
             'center'
         );
 
-        const statusMsg = team1.length < 3
-            ? `ELIGE TUS 3 PERSONAJES (${team1.length}/3) — CLIC EN RETRATO O EN EL NOMBRE DEL EQUIPO COMPLETO`
-            : (!isArcade12 && team2.length < 3)
-                ? `EQUIPO 2: ELIGE PERSONAJE ${team2.length + 1} DE 3`
-                : '¡EQUIPO COMPLETO! HAZ CLIC EN "¡INICIAR PELEA!" O PRESIONA START / ENTER';
+        let statusMsg = '';
+        if (isOnline) {
+            const myTeam = onlineRole === 'HOST' ? team1 : team2;
+            const otherTeam = onlineRole === 'HOST' ? team2 : team1;
+            if (myTeam.length < 3) {
+                statusMsg = `ELIGE TUS 3 LUCHADORES (${myTeam.length}/3) — RIVAL: (${otherTeam.length}/3)`;
+            } else if (otherTeam.length < 3) {
+                statusMsg = `¡TU EQUIPO LISTO (3/3)! ESPERANDO AL RIVAL (${otherTeam.length}/3)...`;
+            } else {
+                statusMsg = '¡AMBOS EQUIPOS LISTOS! INICIANDO COMBATE EN LÍNEA...';
+            }
+        } else {
+            statusMsg = team1.length < 3
+                ? `ELIGE TUS 3 PERSONAJES (${team1.length}/3) — CLIC EN RETRATO O EN EL NOMBRE DEL EQUIPO COMPLETO`
+                : (!isArcade12 && team2.length < 3)
+                    ? `EQUIPO 2: ELIGE PERSONAJE ${team2.length + 1} DE 3`
+                    : '¡EQUIPO COMPLETO! HAZ CLIC EN "¡INICIAR PELEA!" O PRESIONA START / ENTER';
+        }
         this._drawPixelString(ctx, statusMsg, this.width * 0.5, 50, 12, '#70f8a0', '#090a14', 'center');
 
         // 1. Cabeceras de los 11 Equipos Oficiales (Clic para elegir los 3 integrantes del equipo)
@@ -722,17 +737,21 @@ class HUD {
         for (let i = 0; i < roster.length; i++) {
             const char = roster[i];
             const rect = this.getCharacterSlotRect(i);
-            const isHovered = i === cursorIndex;
+            const isP1Cursor = (typeof p1Cursor === 'number' ? p1Cursor : cursorIndex) === i;
+            const isP2Cursor = typeof p2Cursor === 'number' && p2Cursor === i;
+            const isHovered = isP1Cursor || isP2Cursor;
             const p1Slot = team1.findIndex(c => c.id === char.id);
             const p2Slot = team2.findIndex(c => c.id === char.id);
 
-            ctx.fillStyle = isHovered
+            ctx.fillStyle = isP1Cursor
                 ? '#ffea00'
-                : p1Slot !== -1
-                    ? '#52e584'
-                    : p2Slot !== -1
-                        ? '#ff4d88'
-                        : (char.isBoss ? '#dc2626' : '#64748b');
+                : isP2Cursor
+                    ? '#ff2a5f'
+                    : p1Slot !== -1
+                        ? '#52e584'
+                        : p2Slot !== -1
+                            ? '#ff4d88'
+                            : (char.isBoss ? '#dc2626' : '#64748b');
             ctx.fillRect(rect.x - 2, rect.y - 2, rect.w + 4, rect.h + 4);
 
             ctx.fillStyle = isHovered ? '#2a2456' : '#151830';

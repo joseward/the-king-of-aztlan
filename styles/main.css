@@ -285,6 +285,9 @@ body {
     box-shadow: 0 18px 48px rgba(0, 0, 0, 0.9), 0 0 28px rgba(56, 182, 255, 0.18);
     background: #000;
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .canvas-wrapper.crt-scanlines::after {
@@ -307,10 +310,45 @@ body {
     height: 540px;
     max-width: 100%;
     height: auto;
+    aspect-ratio: 16 / 9;
     outline: none;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
+}
+
+/* Escalado Centrado 16:9 al activar Pantalla Completa (Fullscreen) */
+.canvas-wrapper:fullscreen,
+.canvas-wrapper:-webkit-full-screen,
+.canvas-wrapper:-moz-full-screen {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000000;
+    border: none;
+    outline: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+}
+
+.canvas-wrapper:fullscreen #gameCanvas,
+.canvas-wrapper:-webkit-full-screen #gameCanvas,
+.canvas-wrapper:-moz-full-screen #gameCanvas,
+#gameCanvas:fullscreen,
+#gameCanvas:-webkit-full-screen,
+#gameCanvas:-moz-full-screen {
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
+    margin: auto;
 }
 
 /* Tablero Visual de Controles (Solo Teclado y Mandos) */

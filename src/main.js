@@ -138,12 +138,26 @@ window.addEventListener('DOMContentLoaded', () => {
     if (btnFullscreen) {
         btnFullscreen.addEventListener('click', () => {
             const target = cabinetScreen || canvas;
-            if (!document.fullscreenElement) {
-                if (target.requestFullscreen) target.requestFullscreen();
-            } else if (document.exitFullscreen) {
-                document.exitFullscreen();
+            const fsElem = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!fsElem) {
+                if (target.requestFullscreen) {
+                    target.requestFullscreen();
+                } else if (target.webkitRequestFullscreen) {
+                    target.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
             }
             canvas.focus();
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+            btnFullscreen.textContent = isFs ? '⛶ Salir Pantalla Completa' : '⛶ Pantalla Completa';
         });
     }
 
