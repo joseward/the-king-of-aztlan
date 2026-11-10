@@ -349,8 +349,30 @@ class HUD {
     _drawComboCallout(ctx, attackerIndex, hits, damage) {
         const isP1 = attackerIndex === 1;
         const x = isP1 ? 26 : this.width - 26;
-        this._drawPixelString(ctx, `¡${hits} GOLPES!`, x, 128, 28, '#ffea00', '#14081c', isP1 ? 'left' : 'right');
-        this._drawPixelString(ctx, `DAÑO ${damage}`, x, 146, 13, '#ffffff', '#090a14', isP1 ? 'left' : 'right');
+        const align = isP1 ? 'left' : 'right';
+        const boxW = 228;
+        const boxX = isP1 ? 18 : this.width - 18 - boxW;
+
+        // Placa de combo estilo KOF 2002 con borde energético según longitud del combo
+        const rankColor = hits >= 8 ? '#ff0055' : hits >= 5 ? '#ff7b00' : hits >= 3 ? '#00f5ff' : '#ffea00';
+        const rankTitle = hits >= 8
+            ? '¡¡COMBO SUPREMO AZTLÁN!!'
+            : hits >= 5
+                ? '¡DESTRUCCIÓN KOF!'
+                : hits >= 3
+                    ? '¡COMBO EN CADENA!'
+                    : '¡RÁFAGA RÁPIDA!';
+
+        ctx.fillStyle = 'rgba(10, 10, 26, 0.82)';
+        ctx.fillRect(boxX, 94, boxW, 66);
+        ctx.fillStyle = rankColor;
+        ctx.fillRect(boxX, 94, boxW, 3);
+        ctx.fillRect(boxX, 157, boxW, 3);
+        ctx.fillRect(isP1 ? boxX : boxX + boxW - 5, 94, 5, 66);
+
+        this._drawPixelString(ctx, `¡${hits} GOLPES!`, x, 122, 28, '#ffea00', '#14081c', align);
+        this._drawPixelString(ctx, rankTitle, x, 139, 12, rankColor, '#090a14', align);
+        this._drawPixelString(ctx, `DAÑO TOTAL: ${damage}`, x, 154, 12, '#ffffff', '#090a14', align);
     }
 
     _drawCenterAnnouncement(ctx, announcement) {
@@ -370,80 +392,334 @@ class HUD {
     }
 
     /**
-     * 1. PANTALLA DE ENTRADA CON EL TÍTULO Y ANIMACIÓN ARCADE ("TITLE SCREEN")
+     * 1. PANTALLA DE INTRO CINEMÁTICA ESTILO KOF 2002 ("CHALLENGE TO ULTIMATE BATTLE")
+     * Ciclo animado de 720 frames (12s a 60 FPS) dividido en 4 escenas llenas de acción:
+     * - Escena 1 (0..169): Presentación Neo-Geo / Desfile de alta velocidad de los 11 Equipos Oficiales 3 vs 3.
+     * - Escena 2 (170..359): Duelos de Rivales (Kyo vs Iori, Terry vs Ryo, K' vs Kula) ejecutando combos reales con estelas y chispas.
+     * - Escena 3 (360..489): Tormenta carmesí y aparición del Jefe Final OMEGA RUGAL.
+     * - Escena 4 (490..719): Impacto del emblema "THE KING OF AZTLAN" con combate de exhibición en vivo.
      */
     drawTitleScreen(ctx, globalFrame) {
         window.PixelArtRendererClass.enforcePixelCrispness(ctx);
         ctx.save();
 
-        // Fondo nocturno carmesí/azul con relámpagos ocasionales
-        const flash = (globalFrame % 180 < 4) || (globalFrame % 180 === 7);
-        ctx.fillStyle = flash ? '#4a1c40' : '#090918';
+        const cx = Math.floor(this.width * 0.5);
+        const cycle = globalFrame % 720;
+        const roster = window.CHARACTER_ROSTER || [];
+        const teams = window.OFFICIAL_TEAMS || [];
+
+        // Cortes de flash blanco entre escenas (estilo apertura arcade KOF 2002)
+        const isSceneCut =
+            cycle < 5 ||
+            (cycle >= 170 && cycle < 175) ||
+            (cycle >= 360 && cycle < 365) ||
+            (cycle >= 490 && cycle < 496);
+
+        // Fondo dinámico con líneas de velocidad (Speedlines) y horizonte cibernético Neo-Geo
+        ctx.fillStyle = isSceneCut ? '#ffffff' : '#080816';
         ctx.fillRect(0, 0, this.width, this.height);
 
+        // Bandas horizontales de velocidad estilo KOF 2002
         for (let y = 0; y < this.height; y += 12) {
-            ctx.fillStyle = (y / 12) % 2 === 0 ? (flash ? '#682454' : '#12122b') : (flash ? '#4a1c40' : '#090918');
+            const stripeShift = Math.floor((globalFrame * 6 + y * 3) % 160);
+            ctx.fillStyle = (y / 12) % 2 === 0 ? '#10122a' : '#0a0b1c';
             ctx.fillRect(0, y, this.width, 6);
+            if (y % 36 === 0) {
+                ctx.fillStyle = cycle >= 360 && cycle < 490 ? 'rgba(255, 0, 68, 0.22)' : 'rgba(0, 245, 255, 0.14)';
+                ctx.fillRect((stripeShift * 7) % this.width, y, 140, 3);
+            }
         }
 
-        const cx = Math.floor(this.width * 0.5);
+        // =====================================================================
+        // ESCENA 1 (0..169): DESFILE DE EQUIPOS OFICIALES 3 VS 3 A ALTA VELOCIDAD
+        // =====================================================================
+        if (cycle < 170) {
+            const teamIdx = Math.floor(cycle / 16) % Math.max(1, teams.length);
+            const localT = (cycle % 16) / 16;
+            const slideX = Math.round((1 - localT) * 90);
+            const baseCharIdx = teamIdx * 3;
+            const m1 = roster[baseCharIdx] || roster[0];
+            const m2 = roster[baseCharIdx + 1] || roster[0];
+            const m3 = roster[baseCharIdx + 2] || roster[0];
+            const teamColor = m1?.visuals?.energyColor || '#00f5ff';
 
-        // Sombra imponente de OMEGA RUGAL al centro con ojos rojos encendidos
-        const rugalPortrait = window.PixelArtRenderer.getPortraitCanvas(window.BOSS_RUGAL_TEMPLATE, 152, false);
-        ctx.save();
-        ctx.globalAlpha = 0.35;
-        ctx.drawImage(rugalPortrait, cx - 76, 36);
-        ctx.restore();
+            // Franja diagonal/horizontal de energía del equipo activo
+            ctx.fillStyle = teamColor;
+            ctx.globalAlpha = 0.22;
+            ctx.fillRect(0, 148, this.width, 196);
+            ctx.globalAlpha = 1.0;
+            ctx.fillRect(0, 146, this.width, 4);
+            ctx.fillRect(0, 344, this.width, 4);
 
-        // Marco emblema arcade superior
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(cx - 344, 72, 688, 128);
-        ctx.fillStyle = '#181028';
-        ctx.fillRect(cx - 338, 78, 676, 116);
-        ctx.fillStyle = '#b8001f';
-        ctx.fillRect(cx - 332, 84, 664, 104);
-        ctx.fillStyle = '#120a20';
-        ctx.fillRect(cx - 326, 90, 652, 92);
+            this._drawPixelString(ctx, 'SNK / NEO-GEO MVS  •  PRESENTACIÓN OFICIAL 3 VS 3', cx, 42, 14, '#00f5ff', '#000000', 'center');
+            this._drawPixelString(ctx, '¡¡EL DESAFÍO DEFINITIVO EN AZTLÁN!!', cx, 76, 28, '#ffea00', '#14081c', 'center');
+            this._drawPixelString(
+                ctx,
+                `EQUIPO ${teamIdx + 1}/11: ${teams[teamIdx] ? teams[teamIdx].name : 'EQUIPO JAPÓN'}`,
+                cx,
+                122,
+                24,
+                teamColor,
+                '#000000',
+                'center'
+            );
 
-        this._drawPixelString(ctx, 'MOTOR 2D ESTILO SNK / NEO-GEO MVS', cx, 112, 13, '#70f8a0', '#000000', 'center');
-        this._drawPixelString(ctx, 'THE KING OF AZTLAN', cx, 150, 42, '#ffbe0b', '#14081c', 'center');
-        this._drawPixelString(ctx, 'TORNEO DE 12 NIVELES  •  JEFE FINAL: OMEGA RUGAL', cx, 174, 14, '#ff4d88', '#000000', 'center');
+            // 3 Retratos grandes + 3 Luchadores en acción del equipo actual
+            const slotsX = [cx - 260 - slideX, cx, cx + 260 + slideX];
+            const members = [m1, m2, m3];
+            const poses = ['PUNCH_HEAVY', 'CMD_STRIKE', 'KICK_HIGH'];
+            for (let i = 0; i < 3; i++) {
+                const mem = members[i];
+                if (!mem) continue;
+                const sx = slotsX[i];
 
-        // Dos peleadores de complexión humana en pose de guardia frente a frente en la intro
-        const demoP1 = new window.Fighter({
-            playerIndex: 1,
-            template: window.CHARACTER_ROSTER[0],
-            x: cx - 190,
-            groundY: 438,
-            facing: 1
-        });
-        demoP1.animFrame = globalFrame;
+                // Retrato de fondo iluminado
+                const port = window.PixelArtRenderer.getPortraitCanvas(mem, 116, i === 2);
+                ctx.fillStyle = teamColor;
+                ctx.fillRect(sx - 62, 162, 124, 124);
+                ctx.drawImage(port, sx - 58, 166);
 
-        const demoRugal = new window.Fighter({
-            playerIndex: 2,
-            template: window.BOSS_RUGAL_TEMPLATE,
-            x: cx + 190,
-            groundY: 438,
-            facing: -1
-        });
-        demoRugal.animFrame = globalFrame;
+                // Luchador en pose de ataque con estela elemental
+                const fDemo = new window.Fighter({
+                    playerIndex: i === 2 ? 2 : 1,
+                    template: mem,
+                    x: sx,
+                    groundY: 422,
+                    facing: i === 2 ? -1 : 1
+                });
+                fDemo.state = 'ATTACK';
+                fDemo.currentMove = { startup: 2, active: 20, recovery: 4, pose: poses[i], hits: 2 };
+                fDemo.stateFrame = 5 + (globalFrame % 6);
+                fDemo.chainStepCount = 3;
+                fDemo.animFrame = globalFrame;
+                fDemo.draw(ctx, false);
 
-        demoP1.draw(ctx, false);
-        demoRugal.draw(ctx, false);
+                this._drawPixelString(ctx, mem.name.toUpperCase(), sx, 444, 15, '#ffffff', '#000000', 'center');
+            }
+        }
+        // =====================================================================
+        // ESCENA 2 (170..359): DUELO DE RIVALES KOF 2002 (COMBOS Y CHOQUES EN VIVO)
+        // =====================================================================
+        else if (cycle < 360) {
+            const subFrame = cycle - 170;
+            // Rotar entre 3 duelos icónicos: Kyo vs Iori, Terry vs Ryo, K' vs Kula
+            const rivalPairs = [
+                { p1Idx: 0, p2Idx: 33, title: 'DUELO DE FLAMAS ANCESTRALES: KYO VS IORI' },
+                { p1Idx: 3, p2Idx: 6, title: 'CHOQUE DE LEYENDAS: TERRY BOGARD VS RYO SAKAZAKI' },
+                { p1Idx: 30, p2Idx: 34, title: 'FUEGO CONTRA HIELO NESTS: K\' DASH VS KULA DIAMOND' }
+            ];
+            const pair = rivalPairs[Math.floor(globalFrame / 720) % rivalPairs.length];
+            const t1 = roster[pair.p1Idx] || roster[0];
+            const t2 = roster[pair.p2Idx] || roster[1] || roster[0];
 
-        this._drawPixelString(ctx, 'VS', cx, 345, 36, '#ffea00', '#b8001f', 'center');
+            // Pantalla dividida superior con retratos enfrentados estilo VS Screen KOF 2002
+            ctx.fillStyle = t1.visuals.energyColor || '#ff5500';
+            ctx.globalAlpha = 0.25;
+            ctx.fillRect(0, 56, cx, 118);
+            ctx.fillStyle = t2.visuals.energyColor || '#a855f7';
+            ctx.fillRect(cx, 56, cx, 118);
+            ctx.globalAlpha = 1.0;
 
-        // Texto parpadeante en español
-        if (Math.floor(globalFrame / 22) % 2 === 0) {
+            const p1Port = window.PixelArtRenderer.getPortraitCanvas(t1, 104, false);
+            const p2Port = window.PixelArtRenderer.getPortraitCanvas(t2, 104, true);
+            ctx.drawImage(p1Port, 48, 62);
+            ctx.drawImage(p2Port, this.width - 152, 62);
+
+            this._drawPixelString(ctx, pair.title, cx, 38, 18, '#ffea00', '#000000', 'center');
+            this._drawPixelString(ctx, t1.name.toUpperCase(), 168, 112, 24, '#ffffff', '#000000', 'left');
+            this._drawPixelString(ctx, t2.name.toUpperCase(), this.width - 168, 112, 24, '#ffffff', '#000000', 'right');
+            this._drawPixelString(ctx, 'VS', cx, 126, 36, '#ff0055', '#ffffff', 'center');
+
+            // Piso del escenario de duelo
+            ctx.fillStyle = '#1c3e4b';
+            ctx.fillRect(0, 418, this.width, 40);
+            ctx.fillStyle = '#00f5ff';
+            ctx.fillRect(0, 418, this.width, 3);
+
+            // Coreografía de combo en tiempo real entre los dos rivales
+            const rushProgress = Math.min(1, subFrame / 36);
+            const p1X = Math.round((cx - 240) + rushProgress * 172);
+            const p2X = Math.round((cx + 240) - rushProgress * 172);
+
+            const comboPoses = ['PUNCH_CLOSE_LIGHT', 'KICK_MID', 'PUNCH_HEAVY', 'CMD_STRIKE', 'UPPERCUT', 'KICK_HIGH'];
+            const stepIdx = Math.floor(subFrame / 14) % comboPoses.length;
+            const currentPose = subFrame < 36 ? '' : comboPoses[stepIdx];
+
+            const f1 = new window.Fighter({ playerIndex: 1, template: t1, x: p1X, groundY: 422, facing: 1 });
+            const f2 = new window.Fighter({ playerIndex: 2, template: t2, x: p2X, groundY: 422, facing: -1 });
+            f1.animFrame = globalFrame;
+            f2.animFrame = globalFrame;
+
+            if (subFrame < 36) {
+                f1.state = 'RUN';
+                f2.state = 'RUN';
+            } else {
+                const p1Attacking = Math.floor(subFrame / 28) % 2 === 0;
+                f1.state = p1Attacking ? 'SPECIAL' : 'HIT';
+                f2.state = p1Attacking ? 'HIT' : 'SPECIAL';
+                f1.isMaxMode = true;
+                f2.isMaxMode = true;
+                f1.chainStepCount = 4;
+                f2.chainStepCount = 4;
+                const activeMove = { startup: 1, active: 20, recovery: 2, pose: currentPose, hits: 3 };
+                f1.currentMove = p1Attacking ? activeMove : null;
+                f2.currentMove = !p1Attacking ? activeMove : null;
+                f1.stateFrame = 4 + (subFrame % 10);
+                f2.stateFrame = 4 + (subFrame % 10);
+                f1.hitShakeTimer = p1Attacking ? 0 : 4;
+                f2.hitShakeTimer = p1Attacking ? 4 : 0;
+            }
+
+            f1.draw(ctx, false);
+            f2.draw(ctx, false);
+
+            // Explosión de chispas en el centro cuando chocan sus golpes
+            if (subFrame >= 36) {
+                const sparkColor = (Math.floor(subFrame / 6) % 2 === 0) ? t1.visuals.energyColor : t2.visuals.energyColor;
+                const sy = 300 - (stepIdx % 3) * 28;
+                window.PixelArtRendererClass.drawStrikeBurst(ctx, cx, sy, sparkColor || '#ffbe0b', '#ffffff', true, 4);
+                const fakeHits = Math.min(12, 2 + Math.floor((subFrame - 36) / 11));
+                this._drawComboCallout(ctx, 1, fakeHits, fakeHits * 46);
+            }
+        }
+        // =====================================================================
+        // ESCENA 3 (360..489): ALERTA DEL JEFE FINAL — OMEGA RUGAL
+        // =====================================================================
+        else if (cycle < 490) {
+            const subFrame = cycle - 360;
+            const lightning = (subFrame % 24 < 4) || (subFrame % 24 === 7);
+
+            ctx.fillStyle = lightning ? '#5a0b24' : '#16040c';
+            ctx.fillRect(0, 0, this.width, this.height);
+
+            // Columnas de energía oscura Kaiser / Genocide Cutter
+            for (let i = 0; i < 6; i++) {
+                const px = 90 + i * 156;
+                const h = 160 + Math.round(Math.sin(globalFrame * 0.25 + i) * 70);
+                ctx.fillStyle = 'rgba(255, 0, 68, 0.25)';
+                ctx.fillRect(px - 18, 430 - h, 36, h);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+                ctx.fillRect(px - 4, 430 - h, 8, h);
+            }
+
+            const rugalPort = window.PixelArtRenderer.getPortraitCanvas(window.BOSS_RUGAL_TEMPLATE, 180, false);
+            ctx.save();
+            ctx.globalAlpha = 0.48;
+            ctx.drawImage(rugalPort, cx - 90, 54);
+            ctx.restore();
+
+            // Destello láser en el ojo biónico de Rugal
+            const eyeGlow = 12 + (subFrame % 12) * 3;
+            ctx.fillStyle = '#ff0044';
+            ctx.fillRect(cx - eyeGlow, 128, eyeGlow * 2, 4);
+            ctx.fillRect(cx - 2, 128 - eyeGlow * 0.6, 4, eyeGlow * 1.2);
+
+            this._drawPixelString(ctx, '¡¡ADVERTENCIA: NIVEL 12 — JEFE FINAL!!', cx, 46, 22, '#ff0055', '#000000', 'center');
+            this._drawPixelString(ctx, 'OMEGA RUGAL', cx, 92, 44, '#ffffff', '#b8001f', 'center');
+            this._drawPixelString(ctx, 'EL EMPERADOR DEL ALTAR CARMESÍ DE AZTLÁN', cx, 120, 15, '#ffbe0b', '#000000', 'center');
+
+            const rugalDemo = new window.Fighter({
+                playerIndex: 2,
+                template: window.BOSS_RUGAL_TEMPLATE,
+                x: cx,
+                groundY: 432,
+                facing: 1
+            });
+            rugalDemo.state = 'SUPER';
+            rugalDemo.isMaxMode = true;
+            rugalDemo.chainStepCount = 5;
+            rugalDemo.currentMove = {
+                startup: 1,
+                active: 25,
+                recovery: 4,
+                pose: (Math.floor(subFrame / 18) % 2 === 0) ? 'KICK_HIGH' : 'UPPERCUT',
+                hits: 4
+            };
+            rugalDemo.stateFrame = 5 + (subFrame % 10);
+            rugalDemo.animFrame = globalFrame;
+            rugalDemo.draw(ctx, false);
+        }
+        // =====================================================================
+        // ESCENA 4 (490..719): GRAN LOGO "THE KING OF AZTLAN" + DEMO EN VIVO
+        // =====================================================================
+        else {
+            const subFrame = cycle - 490;
+            const rugalPortrait = window.PixelArtRenderer.getPortraitCanvas(window.BOSS_RUGAL_TEMPLATE, 148, false);
+            ctx.save();
+            ctx.globalAlpha = 0.34;
+            ctx.drawImage(rugalPortrait, cx - 74, 24);
+            ctx.restore();
+
+            // Retratos laterales de héroes estilo póster KOF 2002
+            const kyoPort = window.PixelArtRenderer.getPortraitCanvas(roster[0], 96, false);
+            const ioriPort = window.PixelArtRenderer.getPortraitCanvas(roster[33] || roster[1], 96, true);
+            ctx.save();
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(kyoPort, 28, 66);
+            ctx.drawImage(ioriPort, this.width - 124, 66);
+            ctx.restore();
+
+            // Emblema principal Neo-Geo / KOF 2002 con caída de impacto
+            const dropOffset = subFrame < 12 ? Math.round((12 - subFrame) * -10) : 0;
+            const logoY = 54 + dropOffset;
+
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(cx - 268, 460, 536, 38);
+            ctx.fillRect(cx - 352, logoY, 704, 126);
             ctx.fillStyle = '#181028';
-            ctx.fillRect(cx - 264, 464, 528, 30);
+            ctx.fillRect(cx - 346, logoY + 6, 692, 114);
+            ctx.fillStyle = '#b8001f';
+            ctx.fillRect(cx - 340, logoY + 12, 680, 102);
+            ctx.fillStyle = '#120a20';
+            ctx.fillRect(cx - 334, logoY + 18, 668, 90);
+
+            this._drawPixelString(ctx, 'CHALLENGE TO ULTIMATE BATTLE  •  EDICIÓN KOF 2002', cx, logoY + 38, 13, '#00f5ff', '#000000', 'center');
+            this._drawPixelString(ctx, 'THE KING OF AZTLAN', cx, logoY + 78, 44, '#ffbe0b', '#14081c', 'center');
+            this._drawPixelString(ctx, '42 LUCHADORES  •  11 EQUIPOS 3 VS 3  •  12 NIVELES ARCADE', cx, logoY + 100, 13, '#70f8a0', '#000000', 'center');
+
+            // Combate coreografiado debajo del logo
+            const phasePose = ['PUNCH_CLOSE_LIGHT', 'KICK_LOW', 'PUNCH_HEAVY', 'CMD_STRIKE', 'UPPERCUT', 'KICK_HIGH'][Math.floor(subFrame / 14) % 6];
+            const demoP1 = new window.Fighter({
+                playerIndex: 1,
+                template: roster[0],
+                x: cx - 74,
+                groundY: 438,
+                facing: 1
+            });
+            demoP1.state = 'ATTACK';
+            demoP1.isMaxMode = true;
+            demoP1.chainStepCount = 3;
+            demoP1.currentMove = { startup: 1, active: 18, recovery: 3, pose: phasePose, hits: 2 };
+            demoP1.stateFrame = 4 + (subFrame % 8);
+            demoP1.animFrame = globalFrame;
+
+            const demoP2 = new window.Fighter({
+                playerIndex: 2,
+                template: roster[33] || window.BOSS_RUGAL_TEMPLATE,
+                x: cx + 74,
+                groundY: 438,
+                facing: -1
+            });
+            demoP2.state = (subFrame % 28 < 14) ? 'BLOCK' : 'HIT';
+            demoP2.hitShakeTimer = (subFrame % 28 < 14) ? 0 : 4;
+            demoP2.animFrame = globalFrame;
+
+            demoP1.draw(ctx, false);
+            demoP2.draw(ctx, false);
+
+            window.PixelArtRendererClass.drawStrikeBurst(ctx, cx, 312, '#ffbe0b', '#ffffff', true, 4);
+        }
+
+        // Cartel inferior permanente para entrar al juego en cualquier momento de la intro
+        if (Math.floor(globalFrame / 20) % 2 === 0) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 278, 458, 556, 38);
+            ctx.fillStyle = '#181028';
+            ctx.fillRect(cx - 274, 462, 548, 30);
             this._drawPixelString(
                 ctx,
                 'PRESIONA ENTER / START / PUÑO (U) O HAZ CLIC',
                 cx,
-                485,
+                483,
                 16,
                 '#ffea00',
                 '#000000',
@@ -451,7 +727,9 @@ class HUD {
             );
         }
 
-        this._drawPixelString(ctx, 'CRÉDITOS  02', cx, 524, 14, '#7898ff', '#000000', 'center');
+        // Indicador de escena de la intro + créditos
+        const sceneNum = cycle < 170 ? 1 : cycle < 360 ? 2 : cycle < 490 ? 3 : 4;
+        this._drawPixelString(ctx, `INTRO KOF 2002 [ESCENA ${sceneNum}/4]   •   CRÉDITOS 02`, cx, 524, 13, '#7898ff', '#000000', 'center');
         ctx.restore();
     }
 

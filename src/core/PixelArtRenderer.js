@@ -307,19 +307,61 @@ class PixelArtRenderer {
     /**
      * Dibuja una estela de corte/impacto curvo Pixel-Art (Slash / Flame / Lightning Arc) estilo KOF 2002.
      */
-    static drawSlashArc(ctx, x1, y1, x2, y2, color, coreColor = '#ffffff', p = 3) {
-        const steps = 6;
+    static drawSlashArc(ctx, x1, y1, x2, y2, color, coreColor = '#ffffff', p = 3, curvature = 22, thicknessScale = 1.0) {
+        const steps = 9;
         for (let i = 0; i <= steps; i++) {
             const t = i / steps;
-            const curve = Math.sin(t * Math.PI) * 18;
+            const bell = Math.sin(t * Math.PI);
+            const curve = bell * curvature;
             const px = Math.round((x1 + (x2 - x1) * t + curve) / p) * p;
             const py = Math.round((y1 + (y2 - y1) * t) / p) * p;
-            const thick = (i >= 1 && i <= 5) ? p * 3 : p * 2;
+            const thick = Math.max(p, Math.round(bell * p * 3.6 * thicknessScale));
+
+            // Halo elemental exterior
             ctx.fillStyle = color;
             ctx.fillRect(px - p, py - p, thick + p * 2, thick + p);
+
+            // Ráfagas de velocidad horizontales en el centro del arco
+            if (i % 2 === 1) {
+                ctx.fillRect(px - p * 3, py, thick + p * 4, p);
+            }
+
+            // Núcleo incandescente blanco
             ctx.fillStyle = coreColor;
-            ctx.fillRect(px, py, thick, p);
+            ctx.fillRect(px, py, Math.max(p, thick - p), p);
         }
+    }
+
+    /**
+     * Dibuja un destello de velocidad e impacto en la punta de los golpes básicos (Jabs, Rectos, Patadas).
+     */
+    static drawStrikeBurst(ctx, x, y, color, coreColor = '#ffffff', isHeavy = false, p = 3) {
+        const gx = Math.round(x / p) * p;
+        const gy = Math.round(y / p) * p;
+        const span = isHeavy ? p * 5 : p * 3;
+
+        // Líneas de velocidad cinéticas (Speedlines detrás del golpe)
+        ctx.fillStyle = color;
+        ctx.fillRect(gx - span * 2.2, gy - p, span * 2.4, p * 2);
+        ctx.fillRect(gx - span * 1.6, gy - p * 3, span * 1.4, p);
+        ctx.fillRect(gx - span * 1.6, gy + p * 3, span * 1.4, p);
+
+        // Cruz de destello en el punto de impacto
+        ctx.fillStyle = color;
+        ctx.fillRect(gx - span, gy - p, span * 2, p * 2);
+        ctx.fillRect(gx - p, gy - span, p * 2, span * 2);
+
+        if (isHeavy) {
+            // Destellos diagonales adicionales en golpes fuertes o de combo
+            ctx.fillRect(gx - span * 0.7, gy - span * 0.7, p * 2, p * 2);
+            ctx.fillRect(gx + span * 0.5, gy - span * 0.7, p * 2, p * 2);
+            ctx.fillRect(gx - span * 0.7, gy + span * 0.5, p * 2, p * 2);
+            ctx.fillRect(gx + span * 0.5, gy + span * 0.5, p * 2, p * 2);
+        }
+
+        // Centro brillante
+        ctx.fillStyle = coreColor;
+        ctx.fillRect(gx - p, gy - p, p * 3, p * 2);
     }
 
     /**
@@ -581,31 +623,45 @@ class PixelArtRenderer {
                 PixelArtRenderer.drawPixelLimb(ctx, chamberKneeX, chamberKneeY, chamberFootX, chamberFootY, 15, cBoots, cSecondary, cOutline, p);
             } else {
                 // FASE ACTIVE / RECOVERY DE PATADA: Extensión dinámica + estela de corte KOF 2002
-                const baseTargetY = (pose === 'KICK_LOW' || pose === 'CROUCH_KICK')
-                    ? -22
-                    : (pose === 'KICK_HIGH' || pose === 'CMD_KICK')
-                        ? -162
-                        : -108 + Math.round(flurryOsc * 22);
-                const baseTargetX = (pose === 'KICK_LOW' || pose === 'CROUCH_KICK') ? 92 : 98;
+                const isLowKick = pose === 'KICK_LOW' || pose === 'CROUCH_KICK';
+                const isHighKick = pose === 'KICK_HIGH' || pose === 'CMD_KICK';
+                const isAirKick = pose === 'AIR_KICK';
+                const baseTargetY = isLowKick
+                    ? -18
+                    : isHighKick
+                        ? -168
+                        : isAirKick
+                            ? -86
+                            : -112 + Math.round(flurryOsc * 24);
+                const baseTargetX = isLowKick ? 98 : isHighKick ? 102 : 96;
                 const kickTargetX = Math.round(26 + (baseTargetX - 26) * extFactor);
                 const kickTargetY = Math.round(-36 + (baseTargetY + 36) * extFactor);
                 const kickKneeX = Math.round((frontHipX + kickTargetX) * 0.48);
-                const kickKneeY = Math.round((pelvisY + kickTargetY) * 0.5 - 10);
+                const kickKneeY = Math.round((pelvisY + kickTargetY) * 0.5 - (isHighKick ? 16 : 8));
+
+                const isComboInfused = (fighter.chainStepCount || 0) >= 2 || fighter.isMaxMode || state === 'SPECIAL' || state === 'SUPER';
+                const bootGlow = isComboInfused || isHighKick ? cEnergy : cBoots;
 
                 PixelArtRenderer.drawPixelLimb(ctx, frontHipX, pelvisY, kickKneeX, kickKneeY, 18, legUpperColor, legUpperShade, cOutline, p);
-                PixelArtRenderer.drawPixelLimb(ctx, kickKneeX, kickKneeY, kickTargetX, kickTargetY, 15, cBoots, cSecondary, cOutline, p);
+                PixelArtRenderer.drawPixelLimb(ctx, kickKneeX, kickKneeY, kickTargetX, kickTargetY, 16, bootGlow, cSecondary, cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(kickTargetX / p) - 2, Math.round(kickTargetY / p) - 2, 6, 4, bootGlow, '#ffffff', cOutline, p);
 
                 if (!isSilhouette && atkPhase === 'ACTIVE') {
-                    PixelArtRenderer.drawSlashArc(
-                        ctx,
-                        kickTargetX - 18,
-                        kickTargetY - 26,
-                        kickTargetX + 12,
-                        kickTargetY + 24,
-                        cEnergy,
-                        '#ffffff',
-                        p
-                    );
+                    const slashCol = isComboInfused || isHighKick ? cEnergy : '#7dd3fc';
+                    if (isLowKick) {
+                        // Barrida baja rasante con arco horizontal a ras del suelo y chispas
+                        PixelArtRenderer.drawSlashArc(ctx, kickTargetX - 36, kickTargetY - 6, kickTargetX + 18, kickTargetY + 6, slashCol, '#ffffff', p, 12, 1.1);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                        ctx.fillRect(kickTargetX - 28, -8, 42, 4);
+                    } else if (isHighKick) {
+                        // Gran medialuna de corte en patada alta / overhead
+                        PixelArtRenderer.drawSlashArc(ctx, kickTargetX - 28, kickTargetY + 42, kickTargetX + 16, kickTargetY - 28, cEnergy, '#ffffff', p, 28, 1.35);
+                        PixelArtRenderer.drawSlashArc(ctx, kickTargetX - 18, kickTargetY + 26, kickTargetX + 8, kickTargetY - 16, cSecondary, '#ffffff', p, 18, 0.9);
+                    } else {
+                        // Patada media / aérea con arco de viento afilado
+                        PixelArtRenderer.drawSlashArc(ctx, kickTargetX - 20, kickTargetY - 26, kickTargetX + 14, kickTargetY + 24, slashCol, '#ffffff', p, 20, 1.05);
+                    }
+                    PixelArtRenderer.drawStrikeBurst(ctx, kickTargetX + 8, kickTargetY, slashCol, '#ffffff', isHighKick || isComboInfused, p);
                 }
             }
         } else {
@@ -739,24 +795,34 @@ class PixelArtRenderer {
             PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX, frontShoulderY, midElbowX, midElbowY, 14, sleeveCol, cPrimaryShade, cOutline, p);
             PixelArtRenderer.drawPixelLimb(ctx, midElbowX, midElbowY, targetHandX, targetHandY, 13, cSkin, cSkinShade, cOutline, p);
 
-            const gloveCol = (pose.includes('SUPER') || pose.includes('SPECIAL') || pose === 'UPPERCUT' || pose === 'CMD_STRIKE') ? cEnergy : cSecondary;
-            PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) - 2, Math.round(targetHandY / p) - 3, 6, 6, gloveCol, '#ffffff', cOutline, p);
+            const isHeavyPunch = pose.includes('HEAVY') || pose === 'CMD_STRIKE' || pose === 'BLOWBACK' || pose.includes('SPECIAL') || pose.includes('SUPER') || pose === 'UPPERCUT';
+            const isComboInfused = (fighter.chainStepCount || 0) >= 2 || fighter.isMaxMode || state === 'SPECIAL' || state === 'SUPER';
+            const gloveCol = (isHeavyPunch || isComboInfused) ? cEnergy : cSecondary;
+            PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) - 2, Math.round(targetHandY / p) - 3, isHeavyPunch ? 7 : 6, isHeavyPunch ? 7 : 6, gloveCol, '#ffffff', cOutline, p);
 
             // Garras metálicas de Choi Bounge o Bola de Hierro de Chang
             if (!isSilhouette && isShort) {
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) - 2, 7, 1, '#e2e8f0', null, null, p);
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p), 7, 1, '#e2e8f0', null, null, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) - 2, 8, 1, '#e2e8f0', null, null, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p), 8, 1, '#e2e8f0', null, null, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) + 2, 8, 1, '#e2e8f0', null, null, p);
             } else if (!isSilhouette && isGiant) {
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 2, Math.round(targetHandY / p) - 6, 11, 11, '#475569', '#1e293b', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 2, Math.round(targetHandY / p) - 6, 12, 12, '#475569', '#1e293b', cOutline, p);
             }
 
-            // Estela de corte/flama en fase activa de puños fuertes, comando, especiales y desesperaciones
+            // Estela de corte/flama y destello cinético en fase activa de TODOS los puños (básicos, comando, especiales y supers)
             if (!isSilhouette && atkPhase === 'ACTIVE') {
+                const slashCol = (isHeavyPunch || isComboInfused) ? cEnergy : '#7dd3fc';
                 if (pose === 'UPPERCUT') {
-                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 10, targetHandY + 48, targetHandX + 16, targetHandY - 24, cEnergy, '#ffffff', p);
-                } else if (pose.includes('HEAVY') || pose === 'CMD_STRIKE' || pose === 'BLOWBACK' || pose.includes('SPECIAL') || pose.includes('SUPER')) {
-                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 16, targetHandY - 22, targetHandX + 18, targetHandY + 22, cEnergy, '#ffffff', p);
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 14, targetHandY + 54, targetHandX + 18, targetHandY - 28, cEnergy, '#ffffff', p, 26, 1.35);
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 6, targetHandY + 34, targetHandX + 10, targetHandY - 14, cSecondary, '#ffffff', p, 16, 0.9);
+                } else if (isHeavyPunch) {
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 20, targetHandY - 26, targetHandX + 20, targetHandY + 26, cEnergy, '#ffffff', p, 24, 1.3);
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 12, targetHandY - 16, targetHandX + 12, targetHandY + 16, cSecondary, '#ffffff', p, 14, 0.85);
+                } else {
+                    // Golpe básico rápido (Jab / Recto ligero / Puño agachado / Puño aéreo) con arco de velocidad nítido
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 14, targetHandY - 16, targetHandX + 14, targetHandY + 16, slashCol, '#ffffff', p, 16, 0.95);
                 }
+                PixelArtRenderer.drawStrikeBurst(ctx, targetHandX + 10, targetHandY, slashCol, '#ffffff', isHeavyPunch || isComboInfused, p);
             }
         } else {
             // Guardia marcial viva en reposo / movimiento (las manos describen un ocho rítmico estilo KOF 2002)

@@ -532,9 +532,11 @@ class Fighter {
             return;
         }
 
-        // Estelas dinámicas para Especiales y Desesperaciones (como en KOF 2002)
+        // Estelas dinámicas para Especiales, Desesperaciones y Combos Encadenados (como en KOF 2002)
         if ((this.state === FighterState.SPECIAL || this.state === FighterState.SUPER) && this.stateFrame % 3 === 0) {
             this._pushAfterimage(this.state === FighterState.SUPER ? this.visuals.energyColor : this.visuals.secondaryColor);
+        } else if (this.state === FighterState.ATTACK && this.chainStepCount >= 2 && this.stateFrame === 2) {
+            this._pushAfterimage(this.visuals.energyColor);
         }
 
         // 1. Verificar si el jugador intenta CANCELAR el movimiento actual tras haber conectado al menos 1 golpe
@@ -763,20 +765,25 @@ class Fighter {
 
         // 2. Si estamos dentro de un ataque buscando cancelación (Rapid Chain / Target Combo práctico KOF 2002):
         if (isCanceling) {
-            // a) Desde ataque Débil (LP / LK) -> permite encadenar en otro Débil (máx 2), en un Fuerte (HP / HK) o en Comando
-            if (currentMove?.chainableIntoLight && this.chainStepCount < 2) {
+            // a) Desde ataque Débil (LP / LK) -> permite encadenar hasta 2 golpes ligeros y el 3ro sube a Fuerte con avance (Step-In)
+            if (currentMove?.chainableIntoLight && this.chainStepCount < 3) {
                 for (const lightBtn of ['LP', 'LK']) {
                     const check = input.checkButtonBuffered(lightBtn, globalFrame);
                     if (check.matched) {
                         input.consumeEntries(check.entries);
                         this.chainStepCount++;
-                        // En el 2do eslabón si sigue presionando LP/LK de cerca, encadena en Fuerte automáticamente para combos fluidos
-                        if (this.chainStepCount === 2) {
-                            const autoHeavy = lightBtn === 'LP' ? 'close_HP' : 'close_HK';
+                        if (this.chainStepCount >= 3) {
+                            const autoHeavy = lightBtn === 'LP' ? (isCrouching ? 'crouch_HP' : 'close_HP') : 'close_HK';
                             this._startMove(autoHeavy, FighterState.ATTACK, '¡COMBO EN CADENA!');
+                            this.vx = 4.4 * this.facing;
+                            this._pushAfterimage(this.visuals.energyColor);
                         } else {
-                            const prefix = isCrouching ? 'crouch' : 'close';
-                            this._startMove(`${prefix}_${lightBtn}`, FighterState.ATTACK, '');
+                            // Segundo eslabón alterna postura (ej. Jab -> Patada Media o Jab Rápido) con avance
+                            const nextMove = isCrouching
+                                ? `crouch_${lightBtn}`
+                                : (this.currentMoveKey === 'close_LP' && lightBtn === 'LP' ? 'far_LK' : `close_${lightBtn}`);
+                            this._startMove(nextMove, FighterState.ATTACK, '¡RÁFAGA RÁPIDA!');
+                            this.vx = 3.8 * this.facing;
                         }
                         return true;
                     }
@@ -788,37 +795,53 @@ class Fighter {
                     const check = input.checkButtonBuffered(heavyBtn, globalFrame);
                     if (check.matched) {
                         input.consumeEntries(check.entries);
-                        this.chainStepCount = 2;
+                        this.chainStepCount = 3;
                         const prefix = isCrouching ? 'crouch' : 'close';
                         this._startMove(`${prefix}_${heavyBtn}`, FighterState.ATTACK, '¡COMBO EN CADENA!');
+                        this.vx = 4.6 * this.facing;
+                        this._pushAfterimage(this.visuals.energyColor);
                         return true;
                     }
                 }
             }
 
-            // b) Desde un Fuerte de Cerca (close_HP / close_HK) -> presionar de nuevo HP/HK o LP/LK encadena en Comando (cmd_6LP / cmd_6LK)
-            if (this.currentMoveKey === 'close_HP' || this.currentMoveKey === 'close_HK') {
+            // b) Desde cualquier Golpe Fuerte (close_HP, close_HK, far_HP, far_HK, crouch_HP) -> encadena en Puente de Comando (cmd_6LP / cmd_6LK)
+            if (
+                this.currentMoveKey === 'close_HP' ||
+                this.currentMoveKey === 'close_HK' ||
+                this.currentMoveKey === 'far_HP' ||
+                this.currentMoveKey === 'far_HK' ||
+                this.currentMoveKey === 'crouch_HP'
+            ) {
                 for (const btn of ['HP', 'HK', 'LP', 'LK']) {
                     const check = input.checkButtonBuffered(btn, globalFrame);
                     if (check.matched) {
                         input.consumeEntries(check.entries);
+                        this.chainStepCount = 4;
                         const cmdMove = (btn === 'LK' || btn === 'HK') ? 'cmd_6LK' : 'cmd_6LP';
                         this._startMove(cmdMove, FighterState.ATTACK, '¡PUENTE DE COMANDO!');
+                        this.vx = 5.4 * this.facing;
+                        this._pushAfterimage(this.visuals.energyColor);
                         return true;
                     }
                 }
             }
 
-            // c) Desde un Movimiento de Comando (cmd_6LP / cmd_6LK) -> presionar HP o HK encadena en Especial Rush / Wave automáticamente
+            // c) Desde un Movimiento de Comando (cmd_6LP / cmd_6LK) -> encadena en Especial según el botón presionado
             if (this.currentMoveKey === 'cmd_6LP' || this.currentMoveKey === 'cmd_6LK') {
-                const hpCheck = input.checkButtonBuffered('HP', globalFrame);
-                const hkCheck = input.checkButtonBuffered('HK', globalFrame);
-                if (hpCheck.matched || hkCheck.matched) {
-                    input.consumeEntries(hpCheck.matched ? hpCheck.entries : hkCheck.entries);
-                    const autoSpec = hkCheck.matched ? 'special_QCB_K' : 'special_DP_P';
-                    this._startMove(autoSpec, FighterState.SPECIAL, '¡CANCELACIÓN ESPECIAL!');
-                    window.AudioSynth.play('special');
-                    return true;
+                for (const btn of ['HP', 'HK', 'LP', 'LK']) {
+                    const check = input.checkButtonBuffered(btn, globalFrame);
+                    if (check.matched) {
+                        input.consumeEntries(check.entries);
+                        this.chainStepCount = 5;
+                        const autoSpec = (btn === 'HK' || btn === 'LK')
+                            ? 'special_QCB_K'
+                            : (btn === 'HP' ? 'special_DP_P' : 'special_QCF_P');
+                        this._startMove(autoSpec, FighterState.SPECIAL, '¡CANCELACIÓN ESPECIAL!');
+                        this._pushAfterimage(this.visuals.energyColor);
+                        window.AudioSynth.play('special');
+                        return true;
+                    }
                 }
             }
 

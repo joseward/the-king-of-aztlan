@@ -1696,31 +1696,46 @@ class GameLoop {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(snapX - r * 0.5, snapY - r * 0.5, r, r);
             } else {
-                // Explosión de impacto KOF 2002 con rayos diagonales, cruz luminosa y color elemental del atacante
+                // Explosión de impacto KOF 2002 con anillo de onda expansiva, rayos diagonales, cruz luminosa y chispas elementales
                 const isHeavy = s.type === 'HEAVY';
-                const spread = (step + 1) * (isHeavy ? 6 : 4);
+                const spread = (step + 1) * (isHeavy ? 6.5 : 4.5);
                 const mainColor = s.color || (isHeavy ? '#ff5500' : '#ffbe0b');
 
-                // Halo exterior elemental
+                // Anillo de onda de choque pixelado exterior
+                const ringR = Math.round(spread * 1.45);
+                ctx.fillStyle = mainColor;
+                ctx.fillRect(snapX - ringR, snapY - ringR, ringR * 2, p);
+                ctx.fillRect(snapX - ringR, snapY + ringR - p, ringR * 2, p);
+                ctx.fillRect(snapX - ringR, snapY - ringR, p, ringR * 2);
+                ctx.fillRect(snapX + ringR - p, snapY - ringR, p, ringR * 2);
+
+                // Halo central elemental
                 ctx.fillStyle = mainColor;
                 ctx.fillRect(snapX - spread, snapY - spread, spread * 2, spread * 2);
 
                 // Rayos en cruz (Horizontal y Vertical extendidos)
                 ctx.fillStyle = '#ffea00';
-                ctx.fillRect(snapX - spread * 1.8, snapY - p, spread * 3.6, p * 2);
-                ctx.fillRect(snapX - p, snapY - spread * 1.8, p * 2, spread * 3.6);
+                ctx.fillRect(snapX - spread * 2.1, snapY - p, spread * 4.2, p * 2);
+                ctx.fillRect(snapX - p, snapY - spread * 2.1, p * 2, spread * 4.2);
 
-                // Fragmentos diagonales de energía (Slash Shards)
-                const diag = Math.round(spread * 1.25);
+                // Fragmentos diagonales de energía y chispas voladoras (Slash Shards)
+                const diag = Math.round(spread * 1.35);
                 ctx.fillStyle = mainColor;
                 ctx.fillRect(snapX + diag, snapY - diag, p * 2, p * 2);
                 ctx.fillRect(snapX - diag - p * 2, snapY + diag, p * 2, p * 2);
                 ctx.fillRect(snapX + diag, snapY + diag, p * 2, p * 2);
                 ctx.fillRect(snapX - diag - p * 2, snapY - diag, p * 2, p * 2);
 
-                // Núcleo incandescente blanco
+                // Chispas secundarias dispersándose
+                const sparkDist = Math.round(spread * 1.85);
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(snapX - spread * 0.55, snapY - spread * 0.55, spread * 1.1, spread * 1.1);
+                ctx.fillRect(snapX + sparkDist, snapY - p * 3, p, p);
+                ctx.fillRect(snapX - sparkDist, snapY + p * 3, p, p);
+                ctx.fillRect(snapX + p * 3, snapY - sparkDist, p, p);
+                ctx.fillRect(snapX - p * 3, snapY + sparkDist, p, p);
+
+                // Núcleo incandescente blanco
+                ctx.fillRect(snapX - spread * 0.6, snapY - spread * 0.6, spread * 1.2, spread * 1.2);
             }
         }
     }
