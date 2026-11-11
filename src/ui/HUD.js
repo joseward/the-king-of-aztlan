@@ -187,19 +187,40 @@ class HUD {
             ctx.fillStyle = '#d90429';
             ctx.fillRect(innerX + (innerW - redW), innerY, redW, innerH);
 
-            ctx.fillStyle = hpRatio < 0.28 ? '#ff5500' : '#52e584';
+            ctx.fillStyle = hpRatio <= 0.35 ? '#ff2a55' : '#52e584';
             ctx.fillRect(innerX + (innerW - hpW), innerY, hpW, innerH);
-            ctx.fillStyle = hpRatio < 0.28 ? '#ffaa00' : '#9efcd0';
+            ctx.fillStyle = hpRatio <= 0.35 ? '#ffea00' : '#9efcd0';
             ctx.fillRect(innerX + (innerW - hpW), innerY, hpW, 4);
         } else {
             // Jugador 2: Llena desde el reloj central (izquierda)
             ctx.fillStyle = '#d90429';
             ctx.fillRect(innerX, innerY, redW, innerH);
 
-            ctx.fillStyle = hpRatio < 0.28 ? '#ff5500' : '#52e584';
+            ctx.fillStyle = hpRatio <= 0.35 ? '#ff2a55' : '#52e584';
             ctx.fillRect(innerX, innerY, hpW, innerH);
-            ctx.fillStyle = hpRatio < 0.28 ? '#ffaa00' : '#9efcd0';
+            ctx.fillStyle = hpRatio <= 0.35 ? '#ffea00' : '#9efcd0';
             ctx.fillRect(innerX, innerY, hpW, 4);
+        }
+
+        // Sub-barra de Medidor de Guardia (Guard Gauge KOF 2002) debajo de la barra de salud
+        const guardRatio = Math.max(0, (fighter.guardGauge ?? 100) / (fighter.maxGuardGauge || 100));
+        const guardBarW = Math.floor(innerW * 0.42);
+        const guardFillW = Math.floor(guardBarW * guardRatio);
+        const guardX = isP1 ? (x + w - guardBarW - 4) : (x + 4);
+        const guardY = y - 7;
+        ctx.fillStyle = '#090a14';
+        ctx.fillRect(guardX - 1, guardY - 1, guardBarW + 2, 5);
+        ctx.fillStyle = guardRatio < 0.3 ? '#ff0055' : '#00f5ff';
+        if (isP1) {
+            ctx.fillRect(guardX + (guardBarW - guardFillW), guardY, guardFillW, 3);
+        } else {
+            ctx.fillRect(guardX, guardY, guardFillW, 3);
+        }
+
+        // Indicador luminoso "¡MAX2 LISTO!" cuando está en salud crítica y tiene Modo MAX o 2+ Stocks
+        if (fighter.isCriticalHealth && fighter.isCriticalHealth() && (fighter.isMaxMode || fighter.powerGauge >= 2000)) {
+            const badgeX = isP1 ? x + 8 : x + w - 8;
+            this._drawPixelString(ctx, '¡¡CLÍMAX MAX2 LISTO!!', badgeX, y + h + 32, 11, '#ffea00', '#b8001f', isP1 ? 'left' : 'right');
         }
     }
 
@@ -761,19 +782,31 @@ class HUD {
         const modes = [
             {
                 title: '1. TORNEO ARCADE (12 NIVELES — JEFE FINAL: RUGAL)',
-                desc: 'Elige a tus 3 luchadores y supera los 12 niveles hasta enfrentar a OMEGA RUGAL.'
+                desc: 'Elige a tus 3 luchadores y supera los 12 niveles hasta enfrentar a OMEGA RUGAL.',
+                badge: '12 ETAPAS',
+                accent: '#ffbe0b',
+                iconIdx: 0
             },
             {
                 title: '2. EQUIPO VS CPU (PELEA LIBRE 3 VS 3)',
-                desc: 'Combate directo por equipos 3 contra 3 eligiendo ambos bandos.'
+                desc: 'Combate directo por equipos 3 contra 3 eligiendo ambos bandos.',
+                badge: '3 VS 3 IA',
+                accent: '#00f5ff',
+                iconIdx: 3
             },
             {
                 title: '3. VERSUS 2 JUGADORES LOCAL (1P VS 2P)',
-                desc: 'Duelo multijugador local con teclado o 2 mandos USB / Bluetooth.'
+                desc: 'Duelo multijugador local con teclado o 2 mandos USB / Bluetooth.',
+                badge: 'LOCAL 2P',
+                accent: '#52e584',
+                iconIdx: 33
             },
             {
                 title: '4. DESAFÍO FINAL: NIVEL 12 VS OMEGA RUGAL',
-                desc: 'Salta directamente al Nivel 12 para poner a prueba tu equipo contra Rugal.'
+                desc: 'Salta directamente al Nivel 12 para poner a prueba tu equipo contra Rugal.',
+                badge: 'JEFE FINAL',
+                accent: '#ff0055',
+                iconIdx: 41
             }
         ];
 
@@ -781,6 +814,7 @@ class HUD {
         const boxH = 74;
         const startY = 122;
         const gap = 18;
+        const roster = window.CHARACTER_ROSTER || [];
 
         for (let i = 0; i < modes.length; i++) {
             const m = modes[i];
@@ -788,17 +822,32 @@ class HUD {
             const by = startY + i * (boxH + gap);
             const selected = i === modeIndex;
 
-            ctx.fillStyle = selected ? '#ffea00' : '#4a5568';
+            ctx.fillStyle = selected ? m.accent : '#4a5568';
             ctx.fillRect(bx - 4, by - 4, boxW + 8, boxH + 8);
-            ctx.fillStyle = selected ? '#261838' : '#14162b';
+            ctx.fillStyle = selected ? '#221638' : '#14162b';
             ctx.fillRect(bx, by, boxW, boxH);
+
+            // Barra lateral de acento e ícono de retrato del modo
+            ctx.fillStyle = selected ? m.accent : '#334155';
+            ctx.fillRect(bx, by, 10, boxH);
+
+            const modeChar = roster[m.iconIdx] || roster[0];
+            if (modeChar) {
+                const pCanv = window.PixelArtRenderer.getPortraitCanvas(modeChar, 58, false);
+                ctx.drawImage(pCanv, bx + 18, by + 8);
+            }
+
+            // Insignia derecha del modo
+            ctx.fillStyle = selected ? m.accent : '#1e293b';
+            ctx.fillRect(bx + boxW - 114, by + 12, 100, 22);
+            this._drawPixelString(ctx, m.badge, bx + boxW - 64, by + 28, 10, selected ? '#090a14' : '#94a3b8', null, 'center');
 
             this._drawPixelString(
                 ctx,
                 selected ? `► ${m.title}` : `  ${m.title}`,
-                bx + 22,
+                bx + 86,
                 by + 30,
-                17,
+                16,
                 selected ? '#ffea00' : '#ffffff',
                 '#000000',
                 'left'
@@ -806,9 +855,9 @@ class HUD {
             this._drawPixelString(
                 ctx,
                 m.desc,
-                bx + 42,
+                bx + 96,
                 by + 54,
-                12,
+                11,
                 selected ? '#70f8a0' : '#94a3b8',
                 '#000000',
                 'left'
@@ -1108,11 +1157,27 @@ class HUD {
 
         if (char) {
             this._drawCornerPortrait(ctx, char, x + 12, y + 12, 76, false);
-            this._drawPixelString(ctx, char.name, x + 100, y + 26, 16, '#ffea00', '#000', 'left');
-            this._drawPixelString(ctx, `${char.teamName} • SALUD:${char.stats.maxHp}`, x + 100, y + 44, 11, '#70f8a0', '#000', 'left');
-            this._drawPixelString(ctx, `236+P: ${char.moveset.special_QCF_P.name.slice(0, 24)}`, x + 100, y + 64, 10, '#cbd5e1', '#000', 'left');
-            this._drawPixelString(ctx, `623+P: ${char.moveset.special_DP_P.name.slice(0, 24)}`, x + 100, y + 80, 10, '#cbd5e1', '#000', 'left');
-            this._drawPixelString(ctx, `SÚPER: ${char.moveset.super_DM.name.slice(0, 24)}`, x + 100, y + 96, 10, '#ff4d88', '#000', 'left');
+            this._drawPixelString(ctx, char.name, x + 100, y + 24, 15, '#ffea00', '#000', 'left');
+            this._drawPixelString(ctx, `${char.teamName} • SALUD:${char.stats.maxHp}`, x + 100, y + 40, 10, '#70f8a0', '#000', 'left');
+
+            // Barras de estadísticas (ATQ, DEF, VEL)
+            const atkPct = Math.min(1, (char.stats.attackPower || 1) / 1.35);
+            const defPct = Math.min(1, (char.stats.defense || 1) / 1.3);
+            const spdPct = Math.min(1, (char.stats.runSpeed || 7.5) / 10.5);
+            const drawStatBar = (label, bx, by, pct, col) => {
+                this._drawPixelString(ctx, label, bx, by + 7, 9, '#94a3b8', '#000', 'left');
+                ctx.fillStyle = '#090a14';
+                ctx.fillRect(bx + 26, by, 38, 7);
+                ctx.fillStyle = col;
+                ctx.fillRect(bx + 27, by + 1, Math.round(36 * pct), 5);
+            };
+            drawStatBar('ATQ', x + 100, y + 46, atkPct, '#ff5500');
+            drawStatBar('DEF', x + 172, y + 46, defPct, '#00f5ff');
+            drawStatBar('VEL', x + 244, y + 46, spdPct, '#52e584');
+
+            this._drawPixelString(ctx, `236+P: ${char.moveset.special_QCF_P.name.slice(0, 24)}`, x + 100, y + 68, 10, '#cbd5e1', '#000', 'left');
+            this._drawPixelString(ctx, `623+P: ${char.moveset.special_DP_P.name.slice(0, 24)}`, x + 100, y + 83, 10, '#cbd5e1', '#000', 'left');
+            this._drawPixelString(ctx, `MAX2: ${(char.moveset.super_MAX2 || char.moveset.super_SDM).name.slice(0, 25)}`, x + 100, y + 98, 10, '#ff4d88', '#000', 'left');
         }
 
         // 3 Botones inferiores: "¡PELEAR!" (x+8..x+140), "LIMPIAR" (x+148..x+232), "◄ MODOS" (x+240..x+328)
@@ -1165,6 +1230,7 @@ class HUD {
             'left'
         );
 
+        const roleLabels = ['1º LÍDER', '2º MEDIO', '3º ANCLA'];
         for (let slot = 0; slot < 3; slot++) {
             const sx = x + 10 + slot * 88;
             const sy = y + 32;
@@ -1178,10 +1244,11 @@ class HUD {
             if (member) {
                 const pCanv = window.PixelArtRenderer.getPortraitCanvas(member, 64, !isP1);
                 ctx.drawImage(pCanv, sx + 8, sy + 8);
-                this._drawPixelString(ctx, `${slot + 1}º`, sx + 40, sy + 88, 11, '#ffea00', '#000', 'center');
+                this._drawPixelString(ctx, roleLabels[slot], sx + 40, sy + 88, 10, '#ffea00', '#000', 'center');
                 this._drawPixelString(ctx, member.name.slice(0, 8), sx + 40, sy + 106, 10, '#ffffff', '#000', 'center');
             } else {
-                this._drawPixelString(ctx, `VACÍO ${slot + 1}`, sx + 40, sy + 64, 11, '#64748b', '#000', 'center');
+                this._drawPixelString(ctx, roleLabels[slot], sx + 40, sy + 52, 10, '#94a3b8', '#000', 'center');
+                this._drawPixelString(ctx, 'LIBRE', sx + 40, sy + 72, 11, '#64748b', '#000', 'center');
             }
         }
     }

@@ -94,9 +94,12 @@ class Fighter {
         this.invulnerableTimer = 0;    // Frames de invulnerabilidad (Evade, DP, Super, Wakeup)
         this.evadeDir = 1;
 
-        // Contador de combos recibidos por este peleador
+        // Contador de combos recibidos por este peleador y Medidor de Guardia KOF 2002
         this.comboHitsTaken = 0;
         this.comboDamageTaken = 0;
+        this.maxGuardGauge = 100;
+        this.guardGauge = 100;
+        this.lastCounterHitTimer = 0;
 
         // Estelas visuales (para Rodada, Saltos Largos y Modo MAX)
         this.afterimages = [];
@@ -137,6 +140,14 @@ class Fighter {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Comprueba si el peleador está en salud crítica (≤ 35% HP), habilitando el ataque oculto MAX2 (HSDM).
+     * @returns {boolean}
+     */
+    isCriticalHealth() {
+        return this.hp > 0 && this.hp <= this.maxHp * 0.35;
     }
 
     /**
@@ -197,6 +208,14 @@ class Fighter {
         }
         if (this.quickJumpBufferTimer > 0) {
             this.quickJumpBufferTimer--;
+        }
+        if (this.lastCounterHitTimer > 0) {
+            this.lastCounterHitTimer--;
+        }
+
+        // Regeneración gradual del Medidor de Guardia cuando no está en Blockstun
+        if (this.state !== FighterState.BLOCK && this.guardGauge < this.maxGuardGauge) {
+            this.guardGauge = Math.min(this.maxGuardGauge, this.guardGauge + 0.18);
         }
 
         // Drenado gradual de barra roja en el HUD
@@ -278,11 +297,11 @@ class Fighter {
                 break;
 
             case FighterState.BLOCK:
-                this._handleBlockState(input);
+                this._handleBlockState(input, globalFrame, matchCallbacks);
                 break;
 
             case FighterState.KNOCKDOWN:
-                this._handleKnockdownState();
+                this._handleKnockdownState(input, globalFrame, matchCallbacks);
                 break;
 
             case FighterState.KO:
@@ -632,6 +651,30 @@ class Fighter {
             const cdCheck = input.checkButtonBuffered('CD', globalFrame);
             const maxBtnCheck = input.checkButtonBuffered('MAX', globalFrame);
 
+            // 0. Verificar DESESPERACIÓN OCULTA MAX2 / HSDM (Salud Crítica ≤ 35% + Modo MAX o 2 Stocks)
+            if (
+                this.isCriticalHealth() &&
+                this.moveset.super_MAX2 &&
+                (maxBtnCheck.matched || (hasSuperMotion && (cdCheck.matched || ppCheck.matched)))
+            ) {
+                const max2Cost = this.isMaxMode ? 1000 : 2000;
+                if (this.powerGauge >= max2Cost || this.isMaxMode) {
+                    if (this.powerGauge >= max2Cost) {
+                        this.spendPower(max2Cost);
+                    }
+                    this.isMaxMode = false;
+                    this.maxModeTimer = 0;
+                    const used = maxBtnCheck.matched ? maxBtnCheck.entries : (cdCheck.matched ? cdCheck.entries : ppCheck.entries);
+                    input.consumeEntries(used);
+                    this._startMove('super_MAX2', FighterState.SUPER, '¡¡DESESPERACIÓN OCULTA MAX2!!');
+                    if (matchCallbacks?.triggerSuperFreeze) {
+                        matchCallbacks.triggerSuperFreeze(this, true);
+                    }
+                    window.AudioSynth.play('super');
+                    return true;
+                }
+            }
+
             // 1. Verificar SDM (236236 + LP+HP / MAX, o atajo rápido 236 + LP+HP)
             if (ppCheck.matched || (hasSuperMotion && maxBtnCheck.matched)) {
                 const sdmCost = this.isMaxMode ? 1000 : 2000;
@@ -872,6 +915,21 @@ class Fighter {
         }
 
         // ---------------------------------------------------------------------
+        // F2. PROYECCIÓN / AGARRE DE CERCA KOF 2002 (Cerca + Adelante/Atrás + HP o HK)
+        // ---------------------------------------------------------------------
+        const isThrowDistance = distToOpponent < 86 && opponent && opponent.isGrounded() && !opponent.isInvulnerable() && opponent.state !== FighterState.HIT;
+        if (!isCanceling && isThrowDistance && (relDir === 6 || relDir === 4) && this.moveset.throw_grab) {
+            const hpThrow = input.checkButtonBuffered('HP', globalFrame);
+            const hkThrow = input.checkButtonBuffered('HK', globalFrame);
+            if (hpThrow.matched || hkThrow.matched) {
+                input.consumeEntries(hpThrow.matched ? hpThrow.entries : hkThrow.entries);
+                this._startMove('throw_grab', FighterState.ATTACK, '¡PROYECCIÓN KOF!');
+                this._pushAfterimage('#ffea00');
+                return true;
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // G. ATAQUES NORMALES (Agachado vs Cerca vs Lejos)
         // ---------------------------------------------------------------------
         for (const btn of ['HP', 'HK', 'LP', 'LK']) {
@@ -964,7 +1022,7 @@ class Fighter {
      * @returns {boolean}
      */
     canBlockAttack(hitType, input) {
-        if (!input) return false;
+        if (!input || hitType === 'UNBLOCKABLE') return false;
         // Solo se puede bloquear en estados neutrales o si ya estaba en Blockstun
         const blockableStates = [
             FighterState.IDLE,
@@ -995,7 +1053,7 @@ class Fighter {
     }
 
     /**
-     * Aplica un impacto o bloqueo sobre este peleador (con física de Juggle y Multi-Hit estilo KOF 2002).
+     * Aplica un impacto o bloqueo sobre este peleador (con física de Juggle, Counter Hit, Guard Crush y Multi-Hit estilo KOF 2002).
      * @param {Object} attackInfo
      * @param {boolean} isBlocked
      * @param {number} attackerFacing
@@ -1007,6 +1065,20 @@ class Fighter {
         if (isBlocked) {
             const chip = attackInfo.chipDamage || 0;
             this.hp = Math.max(1, this.hp - chip);
+            // Drenar Medidor de Guardia (Guard Gauge); si llega a 0 se produce GUARD CRUSH (¡¡GUARDIA ROTA!!)
+            const guardDrain = Math.max(8, Math.round((attackInfo.damage || 45) * 0.22));
+            this.guardGauge = Math.max(0, this.guardGauge - guardDrain);
+
+            if (this.guardGauge <= 0) {
+                this.guardGauge = this.maxGuardGauge;
+                this.stunTimer = 38;
+                this.vx = 6.5 * attackerFacing;
+                this.lastCancelType = '¡¡GUARDIA ROTA!!';
+                this.setState(FighterState.HIT);
+                window.AudioSynth.play('hit_heavy');
+                return;
+            }
+
             this.stunTimer = attackInfo.blockstun || 12;
             this.vx = (attackInfo.pushback || 4) * 0.75 * attackerFacing;
             this.setState(FighterState.BLOCK);
@@ -1015,8 +1087,17 @@ class Fighter {
             return;
         }
 
+        // Detectar CONTRAATAQUE (Counter Hit) si el defensor estaba lanzando un ataque
+        const isCounterHit =
+            this.state === FighterState.ATTACK ||
+            this.state === FighterState.SPECIAL ||
+            this.state === FighterState.SUPER;
+        if (isCounterHit) {
+            this.lastCounterHitTimer = 45;
+        }
+
         // Impacto limpio
-        const rawDamage = attackInfo.damage || 50;
+        const rawDamage = (attackInfo.damage || 50) * (isCounterHit ? 1.2 : 1.0);
         // Escalamiento suave de daño en combos largos estilo KOF 2002
         const scaling = Math.max(0.45, 1 - this.comboHitsTaken * 0.05);
         const finalDamage = Math.max(4, Math.round((rawDamage * scaling) / this.stats.defense));
@@ -1036,10 +1117,11 @@ class Fighter {
         }
 
         const isFinalHit = attackInfo.isFinalHit !== false;
+        const counterBonusStun = isCounterHit ? 6 : 0;
 
         // Si el golpe no es el último de un multi-hit, mantener al rival frente al atacante o en Juggle corto
         if (!isFinalHit) {
-            this.stunTimer = Math.max(18, attackInfo.hitstun || 20);
+            this.stunTimer = Math.max(18, (attackInfo.hitstun || 20) + counterBonusStun);
             this.vx = (attackInfo.pushback || 2.5) * 0.55 * attackerFacing;
             if (!this.isGrounded() || attackInfo.pose === 'UPPERCUT') {
                 this.vy = -5.2;
@@ -1054,9 +1136,9 @@ class Fighter {
             this.vx = 5.4 * attackerFacing;
             this.vy = -8.8;
             this.y -= 2;
-            // En KOF 2002, si el ataque tiene propiedad Juggle, permanece vulnerable en el aire hasta tocar el suelo
-            if (attackInfo.juggleHit) {
-                this.stunTimer = 28;
+            // En KOF 2002, si el ataque tiene propiedad Juggle (o fue Counter Hit pesado), permanece vulnerable en el aire
+            if (attackInfo.juggleHit || (isCounterHit && rawDamage >= 80)) {
+                this.stunTimer = 28 + counterBonusStun;
                 this.setState(FighterState.HIT);
             } else {
                 this.setState(FighterState.KNOCKDOWN);
@@ -1066,11 +1148,11 @@ class Fighter {
             // Air Juggle hit: mantiene al rival flotando ligeramente para conectar el resto del combo
             this.vx = 3.2 * attackerFacing;
             this.vy = -6.4;
-            this.stunTimer = 22;
+            this.stunTimer = 22 + counterBonusStun;
             this.setState(FighterState.HIT);
             window.AudioSynth.play('hit_heavy');
         } else {
-            this.stunTimer = attackInfo.hitstun || 17;
+            this.stunTimer = (attackInfo.hitstun || 17) + counterBonusStun;
             this.vx = (attackInfo.pushback || 3.5) * attackerFacing;
             this.setState(FighterState.HIT);
             window.AudioSynth.play(rawDamage >= 70 ? 'hit_heavy' : 'hit_light');
@@ -1110,9 +1192,51 @@ class Fighter {
         }
     }
 
-    _handleBlockState(input) {
+    _handleBlockState(input, globalFrame, matchCallbacks) {
         this.vx *= 0.82;
         this.stunTimer--;
+
+        // GUARD CANCEL KOF 2002 (Evasión en Guardia o Contraataque CD en Guardia consumiendo 1 Stock o Modo MAX)
+        if (input && (this.powerGauge >= 1000 || this.isMaxMode)) {
+            const evadeCancel = input.checkButtonBuffered('EVADE', globalFrame || this.animFrame);
+            const cdCancel = input.checkButtonBuffered('CD', globalFrame || this.animFrame);
+            if (evadeCancel.matched) {
+                input.consumeEntries(evadeCancel.entries);
+                if (this.isMaxMode) {
+                    this.maxModeTimer = Math.max(0, this.maxModeTimer - 180);
+                } else {
+                    this.spendPower(1000);
+                }
+                const relDir = input.getRelativeDirection(this.facing);
+                this.evadeDir = (relDir === 4 || relDir === 1 || relDir === 7) ? -1 : 1;
+                this.invulnerableTimer = 22;
+                this.lastCancelType = '¡EVASIÓN EN GUARDIA!';
+                this._pushAfterimage('#00f5ff');
+                if (matchCallbacks?.addBannerEffect) {
+                    matchCallbacks.addBannerEffect(this.playerIndex, '¡EVASIÓN EN GUARDIA!', '#00f5ff');
+                }
+                this.setState(FighterState.EVADE);
+                window.AudioSynth.play('evade');
+                return;
+            }
+            if (cdCancel.matched) {
+                input.consumeEntries(cdCancel.entries);
+                if (this.isMaxMode) {
+                    this.maxModeTimer = Math.max(0, this.maxModeTimer - 180);
+                } else {
+                    this.spendPower(1000);
+                }
+                this.invulnerableTimer = 14;
+                this._pushAfterimage('#ffea00');
+                if (matchCallbacks?.addBannerEffect) {
+                    matchCallbacks.addBannerEffect(this.playerIndex, '¡CONTRAATAQUE EN GUARDIA!', '#ffea00');
+                }
+                this._startMove('blowback_CD', FighterState.ATTACK, '¡CONTRAATAQUE EN GUARDIA!');
+                window.AudioSynth.play('special');
+                return;
+            }
+        }
+
         if (this.stunTimer <= 0) {
             this.vx = 0;
             const dir = input ? input.getRelativeDirection(this.facing) : 5;
@@ -1124,9 +1248,29 @@ class Fighter {
         }
     }
 
-    _handleKnockdownState() {
+    _handleKnockdownState(input, globalFrame, matchCallbacks) {
         if (this.isGrounded()) {
             this.vx *= 0.75;
+
+            // RECUPERACIÓN RÁPIDA ACROBÁTICA (Ukemi KOF 2002) al tocar el suelo presionando Evasión o Arriba
+            if (input && this.stateFrame >= 4 && this.stateFrame <= 18) {
+                const evadePress = input.checkButtonBuffered('EVADE', globalFrame || this.animFrame);
+                if (evadePress.matched || input.pressed.up) {
+                    if (evadePress.matched) input.consumeEntries(evadePress.entries);
+                    this.vx = -4.5 * this.facing;
+                    this.comboHitsTaken = 0;
+                    this.comboDamageTaken = 0;
+                    this.invulnerableTimer = 14;
+                    this._pushAfterimage('#ffffff');
+                    if (matchCallbacks?.addBannerEffect) {
+                        matchCallbacks.addBannerEffect(this.playerIndex, '¡RECUPERACIÓN RÁPIDA!', '#8effc1');
+                    }
+                    this.setState(FighterState.IDLE);
+                    window.AudioSynth.play('evade');
+                    return;
+                }
+            }
+
             if (this.stateFrame >= 36) {
                 this.vx = 0;
                 this.comboHitsTaken = 0;

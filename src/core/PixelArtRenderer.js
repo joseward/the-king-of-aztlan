@@ -492,10 +492,14 @@ class PixelArtRenderer {
             pose === 'CMD_STRIKE' ||
             pose === 'UPPERCUT' ||
             pose === 'BLOWBACK' ||
+            pose === 'THROW_GRAB' ||
+            pose === 'MAX2_CLIMAX' ||
+            state === 'VICTORY' ||
             pose.includes('SPECIAL') ||
             pose.includes('SUPER');
 
         const isKicking = pose.includes('KICK') || pose === 'SPECIAL_RUSH';
+        const charId = fighter.template?.id || '';
 
         // Inclinación dinámica del torso (anticipa hacia atrás en Startup, se lanza al frente en Active)
         let torsoLeanX = stanceSwayX;
@@ -677,11 +681,19 @@ class PixelArtRenderer {
             PixelArtRenderer.drawPixelBox(ctx, Math.round(frontFootX / p) - 2, Math.round(frontFootY / p) - 2, 8, 2, cBoots, cSecondary, cOutline, p);
         }
 
-        // 5. PELVIS, CINTURA, FALDA O FAJA
+        // 5. PELVIS, CINTURA, FALDA, HEBILLA Y CORREA ROJA DE IORI
         const hipGridY = Math.round(pelvisY / p);
         const hipWidth = isGiant ? 18 : isFemale ? 11 : 12;
         PixelArtRenderer.drawPixelBox(ctx, -Math.floor(hipWidth * 0.5), hipGridY - 3, hipWidth, 6, cPrimary && outfit === 'skirt_jacket' ? cPrimary : cPants, cPantsShade, cOutline, p);
         PixelArtRenderer.drawPixelBox(ctx, -Math.floor(hipWidth * 0.5), hipGridY - 5, hipWidth + 1, 2, cSecondary, cPrimary, cOutline, p);
+        // Hebilla metálica central en el cinturón
+        if (!isSilhouette) {
+            PixelArtRenderer.drawPixelBox(ctx, 0, hipGridY - 5, 3, 2, '#ffea00', '#ffffff', null, p);
+            // Correa roja icónica entre las rodillas de Iori Yagami
+            if (charId === 'iori' && !isKicking) {
+                PixelArtRenderer.drawPixelLimb(ctx, -18, -58, 22, -58, 6, '#dc2626', '#991b1b', cOutline, p);
+            }
+        }
 
         if (outfit === 'karate_gi' || outfit === 'kunoichi_red') {
             PixelArtRenderer.drawPixelBox(ctx, 1, hipGridY - 3, 3, 8, cSecondary, null, cOutline, p);
@@ -703,14 +715,19 @@ class PixelArtRenderer {
         PixelArtRenderer.drawPixelBox(ctx, chestGridX - Math.floor(waistW * 0.5), waistGridY, waistW, 6, absFill, cSkinShade, cOutline, p);
         PixelArtRenderer.drawPixelBox(ctx, chestGridX - Math.floor(chestW * 0.5), chestGridY, chestW, torsoH, torsoFill, torsoShade, cOutline, p);
 
-        // Detalles de vestimenta en el torso
+        // Detalles anatómicos y de vestimenta en el torso
         if (!isSilhouette) {
-            if (outfit === 'karate_gi') {
+            if (outfit === 'bare_chest_pants') {
+                // Definición muscular pectoral y abdominal
+                ctx.fillStyle = cSkinShade;
+                ctx.fillRect((chestGridX - 4) * p, (chestGridY + 4) * p, 8 * p, p);
+                ctx.fillRect((chestGridX) * p, (chestGridY + 1) * p, p, (torsoH + 3) * p);
+            } else if (outfit === 'karate_gi') {
                 PixelArtRenderer.drawPixelLimb(ctx, (chestGridX - 4) * p, chestGridY * p, (chestGridX + 2) * p, (waistGridY + 2) * p, 6, cSecondary, null, null, p);
             } else if (outfit === 'suspenders_boxer') {
                 PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, chestGridY, 2, torsoH + 5, cSecondary, null, null, p);
                 PixelArtRenderer.drawPixelBox(ctx, chestGridX + 3, chestGridY, 2, torsoH + 5, cSecondary, null, null, p);
-            } else if (outfit === 'armor_boss') {
+            } else if (outfit === 'armor_boss' || charId === 'maxima') {
                 PixelArtRenderer.drawPixelBox(ctx, chestGridX - Math.floor(chestW * 0.5) - 2, chestGridY - 1, 5, 4, cSecondary, null, cOutline, p);
                 PixelArtRenderer.drawPixelBox(ctx, chestGridX + Math.floor(chestW * 0.5) - 3, chestGridY - 1, 5, 4, cSecondary, null, cOutline, p);
                 PixelArtRenderer.drawPixelBox(ctx, chestGridX - 2, chestGridY + 2, 4, 4, cEnergy, '#ffffff', null, p);
@@ -723,7 +740,7 @@ class PixelArtRenderer {
             }
         }
 
-        // 7. CUELLO, CABEZA Y PEINADO / ACCESORIOS ÚNICOS
+        // 7. CUELLO, CABEZA, EXPRESIÓN FACIAL Y PEINADO / ACCESORIOS ÚNICOS
         PixelArtRenderer.drawPixelBox(ctx, chestGridX - 2, Math.round(neckY / p), 4, 3, cSkin, cSkinShade, cOutline, p);
         PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY + 2, 7, 6, cSkin, cSkinShade, cOutline, p);
 
@@ -763,23 +780,48 @@ class PixelArtRenderer {
                 ctx.fillStyle = '#090a14';
                 ctx.fillRect((chestGridX) * p, (headGridY + 3) * p, 3 * p, 2 * p);
             } else if (hairStyle !== 'bangs_over_eye') {
+                // Ceja determinada y ojo con pupila
+                ctx.fillStyle = cHair;
+                ctx.fillRect((chestGridX + 1) * p, (headGridY + 3) * p, 3 * p, p);
                 ctx.fillStyle = isRugal ? '#ff0044' : '#ffffff';
                 ctx.fillRect((chestGridX + 1) * p, (headGridY + 4) * p, 2 * p, p);
-                ctx.fillStyle = isRugal ? '#ffea00' : '#090a14';
+                ctx.fillStyle = (state === 'SUPER' || state === 'VICTORY' || isRugal) ? cEnergy : '#090a14';
                 ctx.fillRect((chestGridX + 2) * p, (headGridY + 4) * p, p, p);
+            }
+            // Boca de grito marcial (Kiai) en ataques fuertes, especiales, desesperaciones o victoria
+            if (atkPhase === 'ACTIVE' || state === 'SPECIAL' || state === 'SUPER' || state === 'VICTORY' || state === 'HIT') {
+                ctx.fillStyle = '#7f1d1d';
+                ctx.fillRect((chestGridX + 1) * p, (headGridY + 6) * p, 2 * p, p);
+            }
+
+            // Orbes / Cristales elementales orbitando (Athena, Kula, Benimaru, Shermie, Orochi Team)
+            if (charId === 'athena' || charId === 'kula' || charId === 'benimaru' || charId === 'shermie' || charId === 'chris') {
+                const orbX = Math.round(Math.cos(f * 0.16) * 34);
+                const orbY = -142 + Math.round(Math.sin(f * 0.24) * 24);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(orbX / p), Math.round(orbY / p), 3, 3, cEnergy, '#ffffff', cOutline, p);
             }
         }
 
-        // 8. BRAZO DELANTERO CON FASES FLUIDAS (STARTUP -> ACTIVE -> RECOVERY), GUARDIA VIVA Y ESTELAS ELEMENTALES
+        // 8. BRAZO DELANTERO CON FASES FLUIDAS (STARTUP -> ACTIVE -> RECOVERY), VICTORIA, AGARRE Y ARMAS ICÓNICAS
         const frontShoulderX = torsoLeanX + 10;
         const frontShoulderY = shoulderY + 6;
 
-        if (state === 'BLOCK') {
+        if (state === 'VICTORY') {
+            // Pose triunfal KOF 2002: Brazo alzado al cielo con columna de energía elemental
+            const vicHandX = frontShoulderX + 14;
+            const vicHandY = frontShoulderY - 68 + Math.round(Math.sin(f * 0.2) * 6);
+            PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX, frontShoulderY, frontShoulderX + 18, frontShoulderY - 28, 14, sleeveCol, cPrimaryShade, cOutline, p);
+            PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX + 18, frontShoulderY - 28, vicHandX, vicHandY, 13, cSkin, cSkinShade, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, Math.round(vicHandX / p) - 2, Math.round(vicHandY / p) - 3, 6, 6, cEnergy, '#ffffff', cOutline, p);
+            if (!isSilhouette) {
+                PixelArtRenderer.drawStrikeBurst(ctx, vicHandX, vicHandY - 8, cEnergy, '#ffffff', true, p);
+            }
+        } else if (state === 'BLOCK') {
             PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX, frontShoulderY, frontShoulderX + 16, frontShoulderY + 22, 13, sleeveCol, cPrimaryShade, cOutline, p);
             PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX + 16, frontShoulderY + 22, frontShoulderX + 22, frontShoulderY - 14, 12, cSkin, cSkinShade, cOutline, p);
             PixelArtRenderer.drawPixelBox(ctx, Math.round((frontShoulderX + 25) / p), chestGridY - 2, 2, 15, '#00f5ff', '#ffffff', null, p);
         } else if (isPunching && extFactor !== 0) {
-            const maxReachPx = pose.includes('SUPER') ? 96 : (pose.includes('HEAVY') || pose === 'BLOWBACK' || pose === 'CMD_STRIKE') ? 82 : 64;
+            const maxReachPx = pose === 'MAX2_CLIMAX' ? 108 : pose.includes('SUPER') ? 96 : (pose.includes('HEAVY') || pose === 'BLOWBACK' || pose === 'CMD_STRIKE' || pose === 'THROW_GRAB') ? 82 : 64;
             const reachNow = extFactor < 0
                 ? -18 * Math.abs(extFactor) // En Startup arma el puño hacia atrás
                 : Math.round(24 + (maxReachPx - 24) * extFactor);
@@ -787,7 +829,7 @@ class PixelArtRenderer {
             const targetHandX = frontShoulderX + reachNow;
             const verticalOffset = pose === 'UPPERCUT'
                 ? -56 * Math.max(0, extFactor)
-                : (pose === 'CMD_STRIKE' ? -14 : Math.round(flurryOsc * 16));
+                : (pose === 'CMD_STRIKE' ? -14 : Math.round(flurryOsc * 18));
             const targetHandY = frontShoulderY - 2 + verticalOffset;
             const midElbowX = (frontShoulderX + targetHandX) * 0.5 - (extFactor < 0 ? 12 : 0);
             const midElbowY = (frontShoulderY + targetHandY) * 0.5 + (pose === 'UPPERCUT' ? 16 : 6);
@@ -795,31 +837,39 @@ class PixelArtRenderer {
             PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX, frontShoulderY, midElbowX, midElbowY, 14, sleeveCol, cPrimaryShade, cOutline, p);
             PixelArtRenderer.drawPixelLimb(ctx, midElbowX, midElbowY, targetHandX, targetHandY, 13, cSkin, cSkinShade, cOutline, p);
 
-            const isHeavyPunch = pose.includes('HEAVY') || pose === 'CMD_STRIKE' || pose === 'BLOWBACK' || pose.includes('SPECIAL') || pose.includes('SUPER') || pose === 'UPPERCUT';
+            const isHeavyPunch = pose.includes('HEAVY') || pose === 'CMD_STRIKE' || pose === 'BLOWBACK' || pose === 'THROW_GRAB' || pose === 'MAX2_CLIMAX' || pose.includes('SPECIAL') || pose.includes('SUPER') || pose === 'UPPERCUT';
             const isComboInfused = (fighter.chainStepCount || 0) >= 2 || fighter.isMaxMode || state === 'SPECIAL' || state === 'SUPER';
             const gloveCol = (isHeavyPunch || isComboInfused) ? cEnergy : cSecondary;
             PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) - 2, Math.round(targetHandY / p) - 3, isHeavyPunch ? 7 : 6, isHeavyPunch ? 7 : 6, gloveCol, '#ffffff', cOutline, p);
 
-            // Garras metálicas de Choi Bounge o Bola de Hierro de Chang
+            // Armas y efectos propios del personaje en ataque (Garras Choi, Bola Chang, Abanico Mai, Látigo Whip, Cuchilla Leona)
             if (!isSilhouette && isShort) {
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) - 2, 8, 1, '#e2e8f0', null, null, p);
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p), 8, 1, '#e2e8f0', null, null, p);
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) + 2, 8, 1, '#e2e8f0', null, null, p);
             } else if (!isSilhouette && isGiant) {
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 2, Math.round(targetHandY / p) - 6, 12, 12, '#475569', '#1e293b', cOutline, p);
+            } else if (!isSilhouette && charId === 'mai') {
+                // Abanico Kachosen desplegado de Mai Shiranui
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 3, Math.round(targetHandY / p) - 5, 6, 9, '#dc2626', '#ffffff', cOutline, p);
+            } else if (!isSilhouette && charId === 'whip') {
+                // Látigo extendido de Whip
+                PixelArtRenderer.drawSlashArc(ctx, targetHandX, targetHandY, targetHandX + 44, targetHandY - 10, '#a855f7', '#1e1b4b', p, 18, 0.8);
             }
 
-            // Estela de corte/flama y destello cinético en fase activa de TODOS los puños (básicos, comando, especiales y supers)
+            // Estela de corte/flama y destello cinético en fase activa de TODOS los puños
             if (!isSilhouette && atkPhase === 'ACTIVE') {
-                const slashCol = (isHeavyPunch || isComboInfused) ? cEnergy : '#7dd3fc';
+                const slashCol = pose === 'MAX2_CLIMAX' ? '#ffea00' : ((isHeavyPunch || isComboInfused) ? cEnergy : '#7dd3fc');
                 if (pose === 'UPPERCUT') {
                     PixelArtRenderer.drawSlashArc(ctx, targetHandX - 14, targetHandY + 54, targetHandX + 18, targetHandY - 28, cEnergy, '#ffffff', p, 26, 1.35);
                     PixelArtRenderer.drawSlashArc(ctx, targetHandX - 6, targetHandY + 34, targetHandX + 10, targetHandY - 14, cSecondary, '#ffffff', p, 16, 0.9);
+                } else if (pose === 'MAX2_CLIMAX') {
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 28, targetHandY - 38, targetHandX + 28, targetHandY + 38, '#ffea00', '#ffffff', p, 32, 1.6);
+                    PixelArtRenderer.drawSlashArc(ctx, targetHandX - 18, targetHandY + 34, targetHandX + 24, targetHandY - 34, '#ff0055', '#ffffff', p, 26, 1.3);
                 } else if (isHeavyPunch) {
                     PixelArtRenderer.drawSlashArc(ctx, targetHandX - 20, targetHandY - 26, targetHandX + 20, targetHandY + 26, cEnergy, '#ffffff', p, 24, 1.3);
                     PixelArtRenderer.drawSlashArc(ctx, targetHandX - 12, targetHandY - 16, targetHandX + 12, targetHandY + 16, cSecondary, '#ffffff', p, 14, 0.85);
                 } else {
-                    // Golpe básico rápido (Jab / Recto ligero / Puño agachado / Puño aéreo) con arco de velocidad nítido
                     PixelArtRenderer.drawSlashArc(ctx, targetHandX - 14, targetHandY - 16, targetHandX + 14, targetHandY + 16, slashCol, '#ffffff', p, 16, 0.95);
                 }
                 PixelArtRenderer.drawStrikeBurst(ctx, targetHandX + 10, targetHandY, slashCol, '#ffffff', isHeavyPunch || isComboInfused, p);
@@ -844,6 +894,11 @@ class PixelArtRenderer {
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(fistX / p) + 2, Math.round(fistY / p), 9, 9, '#475569', '#1e293b', cOutline, p);
             } else if (!isSilhouette && hairStyle === 'sunglasses_bald') {
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(fistX / p), Math.round(fistY / p) - 8, 2, 14, '#f8fafc', null, cOutline, p);
+            } else if (!isSilhouette && charId === 'mai') {
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(fistX / p) + 2, Math.round(fistY / p) - 4, 4, 6, '#dc2626', '#ffffff', cOutline, p);
+            } else if (!isSilhouette && (charId === 'kyo' || charId === 'iori' || charId === 'kdash') && (f % 8 < 5)) {
+                // Flama viva en el puño en guardia para Kyo, Iori y K'
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(fistX / p) - 1, Math.round(fistY / p) - 5, 3, 3, cEnergy, '#ffffff', null, p);
             }
         }
 

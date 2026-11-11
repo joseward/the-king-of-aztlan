@@ -434,6 +434,13 @@ class GameLoop {
 
         if (this.phase === GamePhase.ROUND_INTRO) {
             this.phaseTimer--;
+            if (this.phaseTimer > 45) {
+                this.fighter1.state = window.FighterState.VICTORY;
+                this.fighter2.state = window.FighterState.VICTORY;
+            } else if (this.phaseTimer === 45) {
+                this.fighter1.setState(window.FighterState.IDLE);
+                this.fighter2.setState(window.FighterState.IDLE);
+            }
             if (this.phaseTimer === 35) {
                 this.announcement = {
                     text: '¡A PELEAR!',
@@ -608,6 +615,15 @@ class GameLoop {
                     this.hud.addBanner(attacker.playerIndex, attacker.lastCancelType, '#00ffc3');
                     attacker.lastCancelType = '';
                 }
+                if (defender.lastCancelType === '¡¡GUARDIA ROTA!!') {
+                    this.hud.addBanner(defender.playerIndex, '¡¡GUARDIA ROTA!!', '#ff0055');
+                    defender.lastCancelType = '';
+                    this.screenShakeTimer = 10;
+                }
+                if (!isBlocked && defender.lastCounterHitTimer === 45) {
+                    this.hud.addBanner(attacker.playerIndex, '¡¡CONTRAATAQUE!!', '#ff3366');
+                    this.screenShakeTimer = 9;
+                }
 
                 // Retroceso en esquina (Corner Pushback): si el defensor está en la esquina, el atacante retrocede
                 if (defender.x <= 52 || defender.x >= this.width - 52) {
@@ -718,12 +734,19 @@ class GameLoop {
             if (this.fighter1.hp >= this.fighter2.hp) {
                 this.fighter2.hp = 0;
                 this.fighter2.setState(window.FighterState.KO);
+                this.fighter1.setState(window.FighterState.VICTORY);
             } else {
                 this.fighter1.hp = 0;
                 this.fighter1.setState(window.FighterState.KO);
+                this.fighter2.setState(window.FighterState.VICTORY);
             }
             this.announcement = { text: '¡TIEMPO AGOTADO!', subtext: '', color: '#ff3366' };
         } else {
+            if (this.fighter1.hp > 0 && this.fighter2.hp <= 0) {
+                this.fighter1.setState(window.FighterState.VICTORY);
+            } else if (this.fighter2.hp > 0 && this.fighter1.hp <= 0) {
+                this.fighter2.setState(window.FighterState.VICTORY);
+            }
             this.announcement = { text: '¡¡K.O.!!', subtext: '', color: '#ff3366' };
         }
     }

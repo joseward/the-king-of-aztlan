@@ -387,6 +387,26 @@ function buildCharacterMoveset(customConfig = {}) {
             hitbox: { offsetX: 18, offsetY: -172, width: 96, height: 54 }
         },
 
+        throw_grab: {
+            name: 'Proyección Imbloqueable (Agarre)',
+            command: 'Cerca: Adelante/Atrás + HP o HK',
+            category: 'THROW',
+            unblockable: true,
+            startup: 3,
+            active: 6,
+            recovery: 14,
+            damage: 115,
+            hitstun: 30,
+            blockstun: 0,
+            pushback: 8.5,
+            meterGain: 90,
+            hitType: 'UNBLOCKABLE',
+            causesKnockdown: true,
+            velocityX: 3.5,
+            pose: 'THROW_GRAB',
+            hitbox: { offsetX: 8, offsetY: -182, width: 78, height: 110 }
+        },
+
         special_QCF_P: {
             name: customConfig.qcfName || 'Wave Attack (236+P)',
             command: '236 + LP/HP',
@@ -542,6 +562,42 @@ function buildCharacterMoveset(customConfig = {}) {
                 isSuper: true
             },
             hitbox: { offsetX: 20, offsetY: -198, width: 148, height: 138 }
+        },
+
+        super_MAX2: {
+            name: customConfig.hsdmName || `Clímax Oculto MAX2: ${customConfig.sdmName || 'Juicio de Aztlán'}`,
+            command: 'Vida ≤ 35% + Modo MAX: 236+MAX o 236236+HP+HK',
+            category: 'SUPER',
+            isMaxSuper: true,
+            isHiddenMax2: true,
+            powerCost: 2000,
+            startup: 2,
+            active: 34,
+            recovery: 22,
+            hits: 12,
+            damage: 48,
+            chipDamage: 12,
+            hitstun: 42,
+            blockstun: 26,
+            pushback: 2.8,
+            meterGain: 0,
+            hitType: 'MID',
+            causesKnockdown: true,
+            juggleHit: true,
+            invulnerableStartup: 28,
+            velocityX: 15.0,
+            pose: 'MAX2_CLIMAX',
+            spawnsProjectile: {
+                speed: 17.5,
+                color: '#ffea00',
+                secondaryColor: '#ff0055',
+                width: 168,
+                height: 152,
+                damage: 260,
+                chipDamage: 55,
+                isSuper: true
+            },
+            hitbox: { offsetX: 20, offsetY: -206, width: 168, height: 156 }
         }
     };
 }
