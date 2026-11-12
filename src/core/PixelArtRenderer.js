@@ -1287,6 +1287,12 @@ class PixelArtRenderer {
         const shoulderY = (isCrouch ? -122 : isAir ? -168 : -170 + stanceBobY) + hitDropY + lungeDropY;
         const neckY = shoulderY - 8;
         const headGridY = Math.round((neckY - 24) / p);
+        const waistGridY = Math.round((pelvisY - 24) / p);
+        const chestGridY = Math.round(shoulderY / p);
+        const chestGridX = Math.round(torsoLeanX / p);
+        const torsoH = Math.max(6, waistGridY - chestGridY + 2);
+        const waistW = isGiant ? 18 : isFemale ? 9 : 12;
+        const chestW = isGiant ? 20 : isHeavy ? 18 : isFemale ? 13 : 16;
 
         // Polvo de impulso en el suelo al correr o lanzar ataques deslizantes
         if (!isSilhouette && (state === 'RUN' || (atkPhase === 'ACTIVE' && move?.velocityX >= 4))) {
@@ -1490,14 +1496,6 @@ class PixelArtRenderer {
         }
 
         // 6. TORSO SEGÚN EL OUTFIT Y COMPLEXIÓN DEL PERSONAJE
-        const waistGridY = Math.round((pelvisY - 24) / p);
-        const chestGridY = Math.round(shoulderY / p);
-        const chestGridX = Math.round(torsoLeanX / p);
-        const torsoH = Math.max(6, waistGridY - chestGridY + 2);
-
-        const waistW = isGiant ? 18 : isFemale ? 9 : 12;
-        const chestW = isGiant ? 20 : isHeavy ? 18 : isFemale ? 13 : 16;
-
         const torsoFill = outfit === 'bare_chest_pants' ? cSkin : cPrimary;
         const torsoShade = outfit === 'bare_chest_pants' ? cSkinShade : cPrimaryShade;
 

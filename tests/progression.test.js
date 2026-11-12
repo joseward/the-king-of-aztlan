@@ -141,3 +141,40 @@ test('KOF 2002 Select Screen: Big Bust illustrations render for all 42 character
     assert.ok(p2Bust, `Busto 2P generado para ${char.name}`);
   }
 });
+
+test('Intro & Animation Stability: All 42 fighters (including Chang Koehan & Omega Rugal) draw without ReferenceError', () => {
+  const { sandbox } = createSandbox();
+  const ctx = sandbox.document.createElement('canvas').getContext('2d');
+  const roster = sandbox.window.CHARACTER_ROSTER;
+
+  for (const char of roster) {
+    const f = new sandbox.window.Fighter({
+      playerIndex: 1,
+      template: char,
+      x: 200,
+      groundY: 422,
+      facing: 1
+    });
+    f.state = 'ATTACK';
+    f.currentMove = { startup: 2, active: 20, recovery: 4, pose: 'CMD_STRIKE', hits: 2 };
+    f.stateFrame = 5;
+    f.chainStepCount = 3;
+    f.animFrame = 10;
+
+    // Esto causaba ReferenceError antes en Chang (chestGridX) y Rugal (chestW)
+    assert.doesNotThrow(() => {
+      f.draw(ctx, false);
+    }, `El renderizado de ${char.name} (${char.id}) no debe lanzar ReferenceError`);
+  }
+});
+
+test('Intro & Animation Stability: Cinematic intro renders all 720 frames and all 11 teams without freezing', () => {
+  const { loop, sandbox } = makeLoop();
+  const ctx = sandbox.document.createElement('canvas').getContext('2d');
+
+  for (let frame = 0; frame < 720; frame += 3) {
+    assert.doesNotThrow(() => {
+      loop.hud.drawTitleScreen(ctx, frame);
+    }, `El frame ${frame} de la intro KOF 2002 no debe congelarse ni fallar`);
+  }
+});
