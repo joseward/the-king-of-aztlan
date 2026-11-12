@@ -511,6 +511,520 @@ class PixelArtRenderer {
         return off;
     }
 
+    /**
+     * Ilustración de busto grande ("Big Bust Portrait") 1:1 estilo KOF 2002 para la pantalla de selección.
+     * Muestra a Kyo, Iori, Terry, Mai, Athena, Benimaru, Chang, Choi, Rugal, etc. con sus rasgos icónicos,
+     * peinados detallados, miradas, accesorios y vestimentas sobre el fondo de rejilla naranja (1P) o magenta (2P).
+     */
+    getKOFBigBustCanvas(template, width = 268, height = 236, isP1 = true) {
+        if (!template) return null;
+        if (!this.bigBustCache) this.bigBustCache = new Map();
+        const key = `${template.id}_${width}_${height}_${isP1 ? 'P1' : 'P2'}`;
+        if (this.bigBustCache.has(key)) {
+            return this.bigBustCache.get(key);
+        }
+
+        const off = document.createElement('canvas');
+        off.width = width;
+        off.height = height;
+        const ctx = off.getContext('2d');
+        PixelArtRenderer.enforcePixelCrispness(ctx);
+
+        const id = template.id;
+        const vis = template.visuals || {};
+        const hs = vis.hairStyle || 'spiky_headband';
+        const sc = vis.skinColor || '#f3c6a0';
+        const hc = vis.hairColor || '#261812';
+        const pc = vis.primaryColor || '#1e293b';
+        const isBoss = Boolean(template.isBoss || id === 'rugal');
+
+        // 1. Fondo de rejilla luminosa Neo-Geo KOF 2002 (Naranja para 1P, Magenta para 2P)
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        if (isP1) {
+            bgGrad.addColorStop(0, '#f97316');
+            bgGrad.addColorStop(0.45, '#dc2626');
+            bgGrad.addColorStop(1, '#581c87');
+        } else {
+            bgGrad.addColorStop(0, '#f472b6');
+            bgGrad.addColorStop(0.45, '#be185d');
+            bgGrad.addColorStop(1, '#4c0519');
+        }
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Rejilla geométrica arcade en perspectiva
+        ctx.save();
+        ctx.strokeStyle = isP1 ? 'rgba(255, 234, 0, 0.28)' : 'rgba(255, 255, 255, 0.22)';
+        ctx.lineWidth = 1;
+        for (let gx = 0; gx < width; gx += 16) {
+            ctx.beginPath();
+            ctx.moveTo(gx, 0);
+            ctx.lineTo(gx + 24, height);
+            ctx.stroke();
+        }
+        for (let gy = 0; gy < height; gy += 16) {
+            ctx.beginPath();
+            ctx.moveTo(0, gy);
+            ctx.lineTo(width, gy);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2. Máscara de recorte con bisel estilo KOF 2002
+        const notch = 18;
+        ctx.save();
+        ctx.beginPath();
+        if (isP1) {
+            // Bisel en esquina inferior derecha para 1P
+            ctx.moveTo(0, 0);
+            ctx.lineTo(width, 0);
+            ctx.lineTo(width, height - notch);
+            ctx.lineTo(width - notch, height);
+            ctx.lineTo(0, height);
+        } else {
+            // Bisel en esquina superior derecha para 2P
+            ctx.moveTo(0, 0);
+            ctx.lineTo(width - notch, 0);
+            ctx.lineTo(width, notch);
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+        }
+        ctx.closePath();
+        ctx.clip();
+
+        // Sombra de silueta detrás del busto
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(width * 0.52 + 10, height * 0.55 + 10, 80, 95, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Renderizado del Busto (Hombros, Cuello, Mentón, Rostro, Ojos, Cabello, Ropa)
+        const cx = width * 0.52;
+        const cy = height * 0.54;
+
+        // Base de Hombros y Ropa
+        ctx.fillStyle = pc;
+        ctx.beginPath();
+        ctx.moveTo(cx - 95, height);
+        ctx.lineTo(cx - 70, cy + 45);
+        ctx.lineTo(cx - 32, cy + 30);
+        ctx.lineTo(cx + 32, cy + 30);
+        ctx.lineTo(cx + 70, cy + 45);
+        ctx.lineTo(cx + 95, height);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sombra y pliegues en la ropa
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.moveTo(cx - 95, height);
+        ctx.lineTo(cx - 70, cy + 45);
+        ctx.lineTo(cx, cy + 55);
+        ctx.lineTo(cx - 30, height);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cuello anatómico
+        ctx.fillStyle = sc;
+        ctx.fillRect(cx - 24, cy + 5, 48, 38);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        ctx.fillRect(cx + 4, cy + 5, 20, 38);
+
+        // Accesorios de Cuello / Pecho específicos de KOF
+        if (id === 'iori') {
+            // Gargantilla de cuero negro con anillo de luna plateada de Iori Yagami
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(cx - 24, cy + 18, 48, 12);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.arc(cx - 2, cy + 24, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(cx - 2, cy + 24, 4, 0, Math.PI * 2);
+            ctx.fill();
+            // Camisa blanca desabrochada
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.moveTo(cx - 36, cy + 34);
+            ctx.lineTo(cx - 18, cy + 46);
+            ctx.lineTo(cx - 30, height);
+            ctx.lineTo(cx - 65, height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 36, cy + 34);
+            ctx.lineTo(cx + 18, cy + 46);
+            ctx.lineTo(cx + 30, height);
+            ctx.lineTo(cx + 65, height);
+            ctx.closePath();
+            ctx.fill();
+        } else if (id === 'kyo') {
+            // Cuello alto de chaqueta blanca con ribetes negros y cremallera de Kyo Kusanagi
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(cx - 28, cy + 22, 56, 16);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(cx - 4, cy + 22, 8, 30);
+            ctx.fillRect(cx - 26, cy + 24, 6, 12);
+            ctx.fillRect(cx + 20, cy + 24, 6, 12);
+        } else if (id === 'terry') {
+            // Chaleco vaquero rojo y camiseta blanca de Terry Bogard
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(cx - 16, cy + 26, 32, 40);
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(cx - 36, cy + 30);
+            ctx.lineTo(cx - 16, cy + 38);
+            ctx.lineTo(cx - 18, height);
+            ctx.lineTo(cx - 70, height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 36, cy + 30);
+            ctx.lineTo(cx + 16, cy + 38);
+            ctx.lineTo(cx + 18, height);
+            ctx.lineTo(cx + 70, height);
+            ctx.closePath();
+            ctx.fill();
+            // Estrella blanca de Terry en el chaleco
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx - 42, cy + 62, 10, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (id === 'chang') {
+            // Cadena de hierro gruesa de Chang Koehan en el cuello
+            ctx.fillStyle = '#94a3b8';
+            for (let k = -3; k <= 3; k++) {
+                ctx.beginPath();
+                ctx.arc(cx + k * 18, cy + 38, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.arc(cx + k * 18, cy + 38, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#94a3b8';
+            }
+        } else if (isBoss || id === 'rugal') {
+            // Hombreras militares de oro de Omega Rugal
+            ctx.fillStyle = '#eab308';
+            ctx.fillRect(cx - 78, cy + 38, 36, 14);
+            ctx.fillRect(cx + 42, cy + 38, 36, 14);
+            // Flecos dorados
+            ctx.fillStyle = '#fde047';
+            for (let f = 0; f < 6; f++) {
+                ctx.fillRect(cx - 76 + f * 6, cy + 52, 4, 16);
+                ctx.fillRect(cx + 44 + f * 6, cy + 52, 4, 16);
+            }
+        } else if (id === 'mai') {
+            // Túnica roja de Kunoichi de Mai Shiranui
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(cx - 32, cy + 28);
+            ctx.lineTo(cx, cy + 52);
+            ctx.lineTo(cx + 32, cy + 28);
+            ctx.lineTo(cx + 50, height);
+            ctx.lineTo(cx - 50, height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(cx - 2, cy + 44, 4, 30);
+        }
+
+        // Rostro y Mentón estilizado Anime Neo-Geo
+        ctx.fillStyle = sc;
+        ctx.beginPath();
+        ctx.moveTo(cx - 42, cy - 25);
+        ctx.lineTo(cx - 36, cy + 18);
+        ctx.lineTo(cx, cy + 32);
+        ctx.lineTo(cx + 36, cy + 18);
+        ctx.lineTo(cx + 42, cy - 25);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sombra lateral del rostro
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+        ctx.beginPath();
+        ctx.moveTo(cx + 6, cy - 20);
+        ctx.lineTo(cx + 42, cy - 20);
+        ctx.lineTo(cx + 36, cy + 18);
+        ctx.lineTo(cx, cy + 32);
+        ctx.closePath();
+        ctx.fill();
+
+        // Ojos y Expresión
+        if (id === 'chang') {
+            // Ojos grandes y mirada salvaje
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx - 18, cy - 6, 8, 0, Math.PI * 2);
+            ctx.arc(cx + 18, cy - 6, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#090a14';
+            ctx.beginPath();
+            ctx.arc(cx - 16, cy - 6, 4, 0, Math.PI * 2);
+            ctx.arc(cx + 16, cy - 6, 4, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (id === 'choi') {
+            // Gafas redondas con brillo rojo
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.arc(cx - 16, cy - 4, 9, 0, Math.PI * 2);
+            ctx.arc(cx + 16, cy - 4, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(cx - 16, cy - 4, 6, 0, Math.PI * 2);
+            ctx.arc(cx + 16, cy - 4, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 18, cy - 7, 4, 3);
+            ctx.fillRect(cx + 14, cy - 7, 4, 3);
+        } else if (id === 'kdash' || hs === 'sunglasses_bald' || id === 'clark') {
+            // Gafas de sol negras estilizadas
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(cx - 30, cy - 12, 60, 16);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(cx - 24, cy - 10, 18, 2);
+            ctx.fillRect(cx + 6, cy - 10, 18, 2);
+        } else if (id === 'iori') {
+            // Ojo izquierdo visible con mirada feroz; el derecho cubierto por flequillo
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 24, cy - 8, 14, 8);
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(cx - 20, cy - 7, 7, 6);
+            ctx.fillStyle = '#090a14';
+            ctx.fillRect(cx - 18, cy - 6, 3, 4);
+        } else if (isBoss || id === 'rugal') {
+            // Ojo derecho normal gris
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 24, cy - 8, 14, 8);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(cx - 20, cy - 7, 6, 6);
+            // Ojo izquierdo: CIBERNETICO ROJO BRILLANTE CON DESTELLO
+            ctx.fillStyle = '#ff0044';
+            ctx.beginPath();
+            ctx.arc(cx + 18, cy - 4, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx + 18, cy - 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+            // Rayos del destello óptico
+            ctx.strokeStyle = 'rgba(255, 0, 80, 0.65)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + 6, cy - 4); ctx.lineTo(cx + 30, cy - 4);
+            ctx.moveTo(cx + 18, cy - 16); ctx.lineTo(cx + 18, cy + 8);
+            ctx.stroke();
+        } else if (hs === 'bangs_over_eye' || id === 'shermie') {
+            // Ojos ocultos por flequillo
+        } else {
+            // Ojos estándar estilizados Anime
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 26, cy - 8, 16, 8);
+            ctx.fillRect(cx + 10, cy - 8, 16, 8);
+            ctx.fillStyle = id === 'terry' ? '#38bdf8' : (id === 'mai' ? '#92400e' : '#1e293b');
+            ctx.fillRect(cx - 20, cy - 7, 7, 6);
+            ctx.fillRect(cx + 13, cy - 7, 7, 6);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 18, cy - 7, 2, 2);
+            ctx.fillRect(cx + 15, cy - 7, 2, 2);
+        }
+
+        // Nariz y Boca con expresión
+        ctx.fillStyle = '#945236';
+        ctx.fillRect(cx - 2, cy + 4, 4, 5); // Nariz
+        if (id === 'chang') {
+            // Gran barba negra espesa que cubre la boca
+            ctx.fillStyle = '#111827';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 24, 38, 26, 0, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (id === 'choi') {
+            // Bigote curvo
+            ctx.fillStyle = '#451a03';
+            ctx.fillRect(cx - 16, cy + 12, 32, 4);
+        } else if (isBoss || id === 'rugal') {
+            // Bigote elegante de Rugal
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(cx - 18, cy + 11, 36, 5);
+        } else {
+            // Boca estilizada (sonrisa para Terry/Kyo/Mai, fría para K')
+            ctx.fillStyle = '#b91c1c';
+            ctx.fillRect(cx - 10, cy + 16, 20, 3);
+        }
+
+        // 4. Cabello y Tocados icónicos de KOF 2002
+        ctx.fillStyle = hc;
+        if (id === 'iori') {
+            // Mechón rojo larguísimo característico de Iori Yagami que cruza la frente y tapa el ojo derecho
+            ctx.beginPath();
+            ctx.moveTo(cx - 45, cy - 40);
+            ctx.lineTo(cx + 25, cy - 50);
+            ctx.lineTo(cx + 42, cy - 10);
+            ctx.lineTo(cx + 34, cy + 30);
+            ctx.lineTo(cx + 12, cy + 42);
+            ctx.lineTo(cx + 2, cy + 20);
+            ctx.lineTo(cx - 12, cy - 10);
+            ctx.closePath();
+            ctx.fill();
+            // Puntas de pelo adicionales
+            ctx.beginPath();
+            ctx.moveTo(cx - 45, cy - 20);
+            ctx.lineTo(cx - 52, cy + 5);
+            ctx.lineTo(cx - 38, cy);
+            ctx.closePath();
+            ctx.fill();
+        } else if (id === 'kyo') {
+            // Cabello castaño peinado al medio con mechones cayendo sobre las sienes de Kyo Kusanagi
+            ctx.beginPath();
+            ctx.arc(cx, cy - 35, 46, Math.PI, 0);
+            ctx.fill();
+            // Mechones laterales
+            ctx.beginPath();
+            ctx.moveTo(cx - 44, cy - 35);
+            ctx.lineTo(cx - 48, cy + 5);
+            ctx.lineTo(cx - 30, cy - 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 44, cy - 35);
+            ctx.lineTo(cx + 48, cy + 5);
+            ctx.lineTo(cx + 30, cy - 10);
+            ctx.closePath();
+            ctx.fill();
+            // Mechón central
+            ctx.beginPath();
+            ctx.moveTo(cx - 12, cy - 35);
+            ctx.lineTo(cx, cy - 12);
+            ctx.lineTo(cx + 12, cy - 35);
+            ctx.closePath();
+            ctx.fill();
+        } else if (id === 'terry') {
+            // Gorra de camionero roja de Terry con frente blanco y pelo rubio suelto
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(cx, cy - 32, 48, Math.PI, 0);
+            ctx.fill();
+            // Frente blanco de la gorra
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 32, cy - 40, 64, 18);
+            // Visera azul de la gorra
+            ctx.fillStyle = '#1e3a8a';
+            ctx.fillRect(cx - 42, cy - 22, 84, 8);
+            // Cabello rubio saliendo a los costados
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(cx - 52, cy - 14, 14, 55);
+            ctx.fillRect(cx + 38, cy - 14, 14, 55);
+        } else if (hs === 'tall_pillar' || id === 'benimaru') {
+            // Torre vertical alta de cabello rubio de Benimaru Nikaido
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.moveTo(cx - 28, cy - 25);
+            ctx.lineTo(cx - 22, 10);
+            ctx.lineTo(cx + 22, 10);
+            ctx.lineTo(cx + 28, cy - 25);
+            ctx.closePath();
+            ctx.fill();
+            // Pendiente brillante en oreja
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.arc(cx - 44, cy + 8, 4, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (id === 'choi') {
+            // Sombrero fedora marrón de Choi Bounge
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(cx - 55, cy - 28, 110, 10);
+            ctx.fillRect(cx - 36, cy - 54, 72, 28);
+            ctx.fillStyle = '#451a03';
+            ctx.fillRect(cx - 36, cy - 34, 72, 6);
+        } else if (id === 'mai') {
+            // Coleta alta castaña de Mai Shiranui
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.arc(cx, cy - 34, 44, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 12, cy - 56, 24, 12);
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.moveTo(cx + 10, cy - 56);
+            ctx.lineTo(cx + 55, cy - 80);
+            ctx.lineTo(cx + 45, cy - 30);
+            ctx.closePath();
+            ctx.fill();
+        } else if (id === 'athena') {
+            // Pelo púrpura y estrella dorada de Athena Asamiya
+            ctx.fillStyle = '#9333ea';
+            ctx.beginPath();
+            ctx.arc(cx, cy - 34, 46, Math.PI, 0);
+            ctx.fill();
+            ctx.fillRect(cx - 48, cy - 25, 14, 55);
+            ctx.fillRect(cx + 34, cy - 25, 14, 55);
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(cx - 28, cy - 38, 7, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (isBoss || id === 'rugal') {
+            // Melena plateada hacia atrás de Omega Rugal
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.arc(cx, cy - 32, 48, Math.PI * 0.9, Math.PI * 0.1);
+            ctx.fill();
+            ctx.fillRect(cx - 52, cy - 28, 16, 45);
+            ctx.fillRect(cx + 36, cy - 28, 16, 45);
+        } else {
+            // Peinado clásico por defecto según hairColor
+            ctx.beginPath();
+            ctx.arc(cx, cy - 32, 44, Math.PI, 0);
+            ctx.fill();
+            ctx.fillRect(cx - 44, cy - 30, 10, 35);
+            ctx.fillRect(cx + 34, cy - 30, 10, 35);
+        }
+
+        ctx.restore(); // Fin de recorte
+
+        // 5. Marco biselado exterior KOF 2002 (3px de borde blanco nítido)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        if (isP1) {
+            ctx.moveTo(1.5, 1.5);
+            ctx.lineTo(width - 1.5, 1.5);
+            ctx.lineTo(width - 1.5, height - notch - 1.5);
+            ctx.lineTo(width - notch - 1.5, height - 1.5);
+            ctx.lineTo(1.5, height - 1.5);
+        } else {
+            ctx.moveTo(1.5, 1.5);
+            ctx.lineTo(width - notch - 1.5, 1.5);
+            ctx.lineTo(width - 1.5, notch + 1.5);
+            ctx.lineTo(width - 1.5, height - 1.5);
+            ctx.lineTo(1.5, height - 1.5);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // 6. Placa inferior con Nombre del Personaje y Equipo
+        ctx.fillStyle = 'rgba(8, 10, 24, 0.82)';
+        ctx.fillRect(4, height - 32, width - (isP1 ? notch + 8 : 8), 26);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(4, height - 32, width - (isP1 ? notch + 8 : 8), 1);
+
+        ctx.font = 'bold 13px monospace';
+        ctx.fillStyle = isP1 ? '#ffea00' : '#ff70a6';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 3;
+        ctx.fillText(template.name.toUpperCase(), 12, height - 14);
+        ctx.shadowBlur = 0;
+
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#70f8a0';
+        ctx.fillText(template.teamName ? template.teamName.slice(0, 18) : 'AZTLAN 2002', 12, height - 4);
+
+        this.bigBustCache.set(key, off);
+        return off;
+    }
+
     static drawArcadeDigit(ctx, digitChar, x, y, pixelSize = 4, fillColor = '#8ea8ff', shadeColor = '#5268c9', outlineColor = '#0a0a18') {
         const maps = {
             '0': ['OOOOOOO', 'OFFFFFO', 'OFFOOFO', 'OFFOOFO', 'OSSOOSO', 'OSSOOSO', 'OSSSSSO', 'OOOOOOO'],

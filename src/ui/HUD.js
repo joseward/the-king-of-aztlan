@@ -1010,174 +1010,323 @@ class HUD {
 
     /**
      * Devuelve la posición (x, y, w, h) de cada uno de los 42 personajes en la cuadrícula KOF 2002:
-     * - Índices 0..32 (11 Equipos Oficiales x 3 miembros): 11 columnas x 3 filas.
-     * - Índices 33..41 (8 Personajes Edit + Omega Rugal): Fila inferior (Fila 3) centrada.
+     * - 9 columnas x 5 filas estilo auténtico KOF 2002.
+     * - Fila 0: Índices 0..8 (Japón, Fatal Fury, Art of Fighting)
+     * - Fila 1: Índices 9..17 (Ikari, Psycho Soldier, Mujeres Luchadoras)
+     * - Fila 2: Índices 18..20 (Corea: Kim, Chang, Choi) | CRONÓMETRO CENTRAL (Cols 3, 4, 5) | Índices 21..23 (Jefes '96: Geese, Krauser, Mr. Big)
+     * - Fila 3: Índices 24..32 (Orochi '97, Agentes 2000, NESTS 2001)
+     * - Fila 4: Índices 33..41 (Iori, Kula, K9999, Angel, Shingo, Blue Mary, Lin, Jhun, Omega Rugal)
      */
     getCharacterSlotRect(index) {
-        const cellW = 76;
-        const cellH = 58;
+        const slotW = 58;
+        const slotH = 92;
         const gapX = 6;
-        const gapY = 6;
-        const startX = 32;
-        const startY = 88;
+        const gapY = 8;
+        const startX = 368;
+        const startY = 24;
 
-        if (index < 33) {
-            const col = Math.floor(index / 3);
-            const row = index % 3;
-            return {
-                x: startX + col * (cellW + gapX),
-                y: startY + row * (cellH + gapY),
-                w: cellW,
-                h: cellH
-            };
+        let row = 0;
+        let col = 0;
+        if (index < 18) {
+            row = Math.floor(index / 9);
+            col = index % 9;
+        } else if (index <= 20) {
+            row = 2;
+            col = index - 18;
+        } else if (index <= 23) {
+            row = 2;
+            col = (index - 21) + 6;
+        } else if (index <= 32) {
+            row = 3;
+            col = index - 24;
+        } else {
+            row = 4;
+            col = index - 33;
         }
 
-        // Fila 3: 8 Edit Characters + Omega Rugal (9 casillas centradas)
-        const editIdx = index - 33;
-        const editStartX = 32 + (cellW + gapX);
         return {
-            x: editStartX + editIdx * (cellW + gapX),
-            y: startY + 3 * (cellH + gapY) + 4,
-            w: cellW,
-            h: cellH
+            x: startX + col * (slotW + gapX),
+            y: startY + row * (slotH + gapY),
+            w: slotW,
+            h: slotH
         };
     }
 
     /**
-     * Devuelve el rectángulo del botón de cabecera de un Equipo Oficial (0..10).
+     * Devuelve el rectángulo del recuadro central del cronómetro digital KOF 2002.
      */
-    getOfficialTeamHeaderRect(teamCol) {
-        const cellW = 76;
+    getTimerRect() {
+        const slotW = 58;
         const gapX = 6;
-        const startX = 32;
+        const startX = 368;
+        const startY = 24;
         return {
-            x: startX + teamCol * (cellW + gapX),
-            y: 64,
-            w: cellW,
-            h: 20
+            x: startX + 3 * (slotW + gapX),
+            y: startY + 2 * (92 + 8),
+            w: 3 * slotW + 2 * gapX, // 186
+            h: 92
         };
     }
 
+    getOfficialTeamHeaderRect(teamCol) {
+        return { x: -999, y: -999, w: 0, h: 0 };
+    }
+
     /**
-     * Pantalla Pixel-Art de Selección de los 42 Personajes y 11 Equipos Oficiales (3 vs 3) estilo KOF 2002.
+     * Pantalla 1:1 de Selección de Personajes estilo The King of Fighters 2002 Neo-Geo MVS:
+     * - Izquierda: Panel 1P con ilustración de busto grande (fondo naranja) y 3 casillas verticales de equipo [1][2][3].
+     *              Panel 2P con ilustración de busto grande (fondo magenta) y 3 casillas verticales de equipo [1][2][3].
+     * - Derecha:   Cuadrícula de 9 columnas x 5 filas con los 42 personajes y cronómetro digital central (21.12).
+     * - Cursores:  Cursor azul con insignia "1" para 1P, y cursor rojo con insignia "2" para 2P.
      */
     drawTeamSelectScreen(ctx, selectState) {
-        const { roster, team1, team2, cursorIndex, p1Cursor, p2Cursor, isOnline, onlineRole, roomCode, gameMode } = selectState;
+        const { roster, team1, team2, cursorIndex, p1Cursor, p2Cursor, isOnline, onlineRole, roomCode, gameMode, selectTimer } = selectState;
         window.PixelArtRendererClass.enforcePixelCrispness(ctx);
 
         ctx.save();
-        ctx.fillStyle = '#0c0e22';
+
+        // 1. Fondo Azul Neo-Geo con rejilla isométrica perspectiva
+        ctx.fillStyle = '#070f36';
         ctx.fillRect(0, 0, this.width, this.height);
-        for (let y = 0; y < this.height; y += 8) {
-            ctx.fillStyle = (y / 8) % 2 === 0 ? '#131633' : '#0c0e22';
-            ctx.fillRect(0, y, this.width, 4);
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.35)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < this.width; x += 32) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, this.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < this.height; y += 32) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(this.width, y);
+            ctx.stroke();
+        }
+        // Líneas diagonales de perspectiva arcade
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+        for (let d = -this.height; d < this.width; d += 64) {
+            ctx.beginPath();
+            ctx.moveTo(d, 0);
+            ctx.lineTo(d + this.height * 0.75, this.height);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2. PANEL IZQUIERDO: 1P (Superior) y 2P (Inferior)
+        const p1ActiveIdx = typeof p1Cursor === 'number' ? p1Cursor : cursorIndex;
+        const p1Fighter = roster[p1ActiveIdx] || roster[0];
+
+        let p2ActiveIdx = typeof p2Cursor === 'number' ? p2Cursor : 33; // Iori por defecto como en KOF 2002
+        if (team2 && team2.length > 0 && typeof p2Cursor !== 'number') {
+            const lastPicked = team2[team2.length - 1];
+            p2ActiveIdx = roster.findIndex(c => c.id === lastPicked.id);
+            if (p2ActiveIdx === -1) p2ActiveIdx = 33;
+        }
+        const p2Fighter = roster[p2ActiveIdx] || roster[33] || roster[3];
+
+        // 2A. Recuadro Busto Grande 1P (Top: x: 24, y: 24, w: 268, h: 236)
+        const p1BustCanvas = window.PixelArtRenderer.getKOFBigBustCanvas(p1Fighter, 268, 236, true);
+        if (p1BustCanvas) {
+            ctx.drawImage(p1BustCanvas, 24, 24);
         }
 
-        const isArcade12 = gameMode === 'ARCADE_12' || gameMode === 'BOSS_RUGAL';
-        this._drawPixelString(
-            ctx,
-            isOnline
-                ? `EN LÍNEA 1 VS 1 (SALA: ${roomCode}) — ERES ${onlineRole === 'HOST' ? 'JUGADOR 1 (1P)' : 'JUGADOR 2 (2P)'}`
-                : 'THE KING OF AZTLAN — SELECCIÓN DE EQUIPOS (3 VS 3)',
-            this.width * 0.5,
-            26,
-            20,
-            isOnline ? '#38b6ff' : '#ffbe0b',
-            '#14081c',
-            'center'
-        );
+        // Casillas verticales de orden de equipo 1P [1], [2], [3] (x: 298, w: 56)
+        this._drawVerticalTeamSlots(ctx, 1, team1, 298, 24, 56, 72, 10);
 
-        let statusMsg = '';
-        if (isOnline) {
-            const myTeam = onlineRole === 'HOST' ? team1 : team2;
-            const otherTeam = onlineRole === 'HOST' ? team2 : team1;
-            if (myTeam.length < 3) {
-                statusMsg = `ELIGE TUS 3 LUCHADORES (${myTeam.length}/3) — RIVAL: (${otherTeam.length}/3) • P/ESC: QUITAR`;
-            } else if (otherTeam.length < 3) {
-                statusMsg = `¡TU EQUIPO LISTO (3/3)! ESPERANDO AL RIVAL (${otherTeam.length}/3)...`;
-            } else {
-                statusMsg = '¡AMBOS EQUIPOS LISTOS! INICIANDO COMBATE EN LÍNEA...';
-            }
-        } else {
-            statusMsg = team1.length < 3
-                ? `ELIGE 3 PERSONAJES (${team1.length}/3) • U/CLIC: ELEGIR • P/ESC/B-CÍRCULO: QUITAR O VOLVER A MODOS`
-                : (!isArcade12 && team2.length < 3)
-                    ? `EQUIPO 2: ELIGE PERSONAJE ${team2.length + 1} DE 3 • P/ESC: QUITAR O VOLVER`
-                    : '¡EQUIPO COMPLETO! PRESIONA ENTER / START O HAZ CLIC EN "¡PELEAR!"';
-        }
-        this._drawPixelString(ctx, statusMsg, this.width * 0.5, 48, 11, '#70f8a0', '#090a14', 'center');
-
-        // 1. Cabeceras de los 11 Equipos Oficiales (Clic para elegir los 3 integrantes del equipo)
-        const shortTeamLabels = ['JAPÓN', 'F.FURY', 'A.O.F', 'IKARI', 'PSYCHO', 'MUJERES', 'COREA', 'JEFES 96', 'OROCHI', 'AGENTES', 'NESTS'];
-        for (let col = 0; col < 11; col++) {
-            const hr = this.getOfficialTeamHeaderRect(col);
-            ctx.fillStyle = '#2563eb';
-            ctx.fillRect(hr.x, hr.y, hr.w, hr.h);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(hr.x, hr.y, hr.w, 2);
-            this._drawPixelString(ctx, shortTeamLabels[col], hr.x + hr.w * 0.5, hr.y + 14, 10, '#ffea00', '#000000', 'center');
+        // 2B. Recuadro Busto Grande 2P (Bottom: x: 24, y: 278, w: 268, h: 236)
+        const p2BustCanvas = window.PixelArtRenderer.getKOFBigBustCanvas(p2Fighter, 268, 236, false);
+        if (p2BustCanvas) {
+            ctx.drawImage(p2BustCanvas, 24, 278);
         }
 
-        // Etiqueta lateral para la fila de Personajes Edit & Jefe
-        this._drawPixelString(ctx, 'EXTRA►', 68, 320, 11, '#ff4d88', '#000000', 'center');
+        // Casillas verticales de orden de equipo 2P [1], [2], [3] (x: 298, w: 56)
+        this._drawVerticalTeamSlots(ctx, 2, team2, 298, 278, 56, 72, 10);
 
-        // 2. Cuadrícula de los 42 Personajes
+        // 3. CUADRÍCULA DE 42 PERSONAJES (Derecha: 9 columnas x 5 filas)
+        const activeP1 = typeof p1Cursor === 'number' ? p1Cursor : cursorIndex;
+        const activeP2 = typeof p2Cursor === 'number' ? p2Cursor : null;
+
         for (let i = 0; i < roster.length; i++) {
             const char = roster[i];
             const rect = this.getCharacterSlotRect(i);
-            const isP1Cursor = (typeof p1Cursor === 'number' ? p1Cursor : cursorIndex) === i;
-            const isP2Cursor = typeof p2Cursor === 'number' && p2Cursor === i;
-            const isHovered = isP1Cursor || isP2Cursor;
+            const isP1 = activeP1 === i;
+            const isP2 = activeP2 === i;
+
             const p1Slot = team1.findIndex(c => c.id === char.id);
             const p2Slot = team2.findIndex(c => c.id === char.id);
 
-            ctx.fillStyle = isP1Cursor
-                ? '#ffea00'
-                : isP2Cursor
-                    ? '#ff2a5f'
-                    : p1Slot !== -1
-                        ? '#52e584'
-                        : p2Slot !== -1
-                            ? '#ff4d88'
-                            : (char.isBoss ? '#dc2626' : '#64748b');
+            // Borde base blanco/metálico estilo KOF 2002
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(rect.x - 2, rect.y - 2, rect.w + 4, rect.h + 4);
-
-            ctx.fillStyle = isHovered ? '#2a2456' : '#151830';
+            ctx.fillStyle = '#0b0d1e';
             ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-            // Mini-retrato pixel-art único del personaje
-            const pCanvas = window.PixelArtRenderer.getPortraitCanvas(char, 40, false);
-            ctx.drawImage(pCanvas, rect.x + 3, rect.y + 3);
+            // Retrato pixel-art del personaje
+            const pCanv = window.PixelArtRenderer.getPortraitCanvas(char, 54, false);
+            ctx.drawImage(pCanv, rect.x + 2, rect.y + 4);
 
-            // Nombre abreviado y orden seleccionado (1P / 2P)
-            this._drawPixelString(
-                ctx,
-                char.name.slice(0, 8),
-                rect.x + rect.w * 0.5,
-                rect.y + rect.h - 5,
-                9,
-                isHovered ? '#ffea00' : '#ffffff',
-                '#000000',
-                'center'
-            );
+            // Tira inferior con el nombre del personaje
+            ctx.fillStyle = '#080a18';
+            ctx.fillRect(rect.x + 1, rect.y + rect.h - 18, rect.w - 2, 17);
+            ctx.fillStyle = isP1 ? '#ffea00' : (isP2 ? '#ff70a6' : '#ffffff');
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(char.name.slice(0, 7), rect.x + rect.w * 0.5, rect.y + rect.h - 6);
 
+            // Insignias de selección en el equipo
             if (p1Slot !== -1) {
                 ctx.fillStyle = '#16a34a';
-                ctx.fillRect(rect.x + 45, rect.y + 4, 28, 16);
-                this._drawPixelString(ctx, `${p1Slot + 1}º1P`, rect.x + 59, rect.y + 16, 10, '#ffffff', '#000', 'center');
-            } else if (p2Slot !== -1) {
+                ctx.fillRect(rect.x + 2, rect.y + 2, 24, 14);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText(`1P·${p1Slot + 1}`, rect.x + 14, rect.y + 12);
+            }
+            if (p2Slot !== -1) {
                 ctx.fillStyle = '#e11d48';
-                ctx.fillRect(rect.x + 45, rect.y + 4, 28, 16);
-                this._drawPixelString(ctx, `${p2Slot + 1}º2P`, rect.x + 59, rect.y + 16, 10, '#ffffff', '#000', 'center');
+                ctx.fillRect(rect.x + rect.w - 26, rect.y + 2, 24, 14);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText(`2P·${p2Slot + 1}`, rect.x + rect.w - 14, rect.y + 12);
+            }
+
+            // CURSORES KOF 2002
+            // Cursor 1P: Marco azul brillante con insignia "1" en esquina inferior izquierda
+            if (isP1) {
+                const pulse = 0.8 + 0.2 * Math.sin(Date.now() * 0.01);
+                ctx.strokeStyle = `rgba(0, 240, 255, ${pulse})`;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(rect.x - 3, rect.y - 3, rect.w + 6, rect.h + 6);
+
+                // Insignia azul "1" en la esquina inferior izquierda
+                ctx.fillStyle = '#2563eb';
+                ctx.fillRect(rect.x - 6, rect.y + rect.h - 18, 18, 18);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(rect.x - 6, rect.y + rect.h - 18, 18, 18);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('1', rect.x + 3, rect.y + rect.h - 4);
+            }
+
+            // Cursor 2P: Marco rojo brillante con insignia "2" en esquina superior derecha
+            if (isP2) {
+                const pulse2 = 0.8 + 0.2 * Math.cos(Date.now() * 0.01);
+                ctx.strokeStyle = `rgba(255, 0, 85, ${pulse2})`;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(rect.x - 3, rect.y - 3, rect.w + 6, rect.h + 6);
+
+                // Insignia roja "2" en la esquina superior derecha
+                ctx.fillStyle = '#dc2626';
+                ctx.fillRect(rect.x + rect.w - 12, rect.y - 6, 18, 18);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(rect.x + rect.w - 12, rect.y - 6, 18, 18);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('2', rect.x + rect.w - 3, rect.y + 8);
             }
         }
 
-        // 3. Paneles Inferiores: Equipo 1 (Izquierda), Ficha de Personaje + Botones (Centro), Equipo 2 (Derecha)
-        this._drawCompactTeamPanel(ctx, 1, team1, 24, 360, 276, 166);
-        this._drawHoveredCharacterPreview(ctx, roster[cursorIndex] || roster[0], 312, 360, 336, 166);
-        this._drawCompactTeamPanel(ctx, 2, team2, 660, 360, 276, 166);
+        // 4. CRONÓMETRO DIGITAL CENTRAL KOF 2002 (Cols 3, 4, 5 en Fila 2)
+        const tRect = this.getTimerRect();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(tRect.x - 3, tRect.y - 3, tRect.w + 6, tRect.h + 6);
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(tRect.x - 1, tRect.y - 1, tRect.w + 2, tRect.h + 2);
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(tRect.x, tRect.y, tRect.w, tRect.h);
+
+        // Tiempo en segundos y centésimas (como "21.12" de la captura de KOF 2002)
+        const tVal = typeof selectTimer === 'number' ? Math.max(0, selectTimer) : 21.12;
+        const sInt = Math.floor(tVal);
+        const cVal = Math.floor((tVal % 1) * 100);
+        const sStr = String(sInt).padStart(2, '0');
+        const cStr = String(cVal).padStart(2, '0');
+
+        const dX = tRect.x + 12;
+        const dY = tRect.y + 14;
+
+        // Dígitos grandes de segundos
+        window.PixelArtRendererClass.drawArcadeDigit(ctx, sStr[0], dX, dY, 5, '#fbbf24', '#d97706', '#140c02');
+        window.PixelArtRendererClass.drawArcadeDigit(ctx, sStr[1], dX + 42, dY, 5, '#fbbf24', '#d97706', '#140c02');
+
+        // Punto decimal "."
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(dX + 84, dY + 32, 7, 7);
+
+        // Dígitos medianos de centésimas
+        window.PixelArtRendererClass.drawArcadeDigit(ctx, cStr[0], dX + 98, dY + 8, 4, '#fbbf24', '#d97706', '#140c02');
+        window.PixelArtRendererClass.drawArcadeDigit(ctx, cStr[1], dX + 132, dY + 8, 4, '#fbbf24', '#d97706', '#140c02');
+
+        // Etiqueta TIME abajo de los dígitos
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#f59e0b';
+        ctx.textAlign = 'center';
+        ctx.fillText('TIME', tRect.x + tRect.w * 0.5, tRect.y + tRect.h - 8);
+
+        // 5. BANNER INFERIOR DE INSTRUCCIONES EN ESPAÑOL
+        this._drawPixelString(
+            ctx,
+            isOnline
+                ? `ONLINE P2P • SALA: ${roomCode} • 1P: ${team1.length}/3  VS  2P: ${team2.length}/3`
+                : (team1.length < 3
+                    ? `ELIGE TUS 3 LUCHADORES (${team1.length}/3) • FLECHAS/WASD: MOVER • U/ENTER: ELEGIR • P/ESC: QUITAR`
+                    : '¡EQUIPO LISTO! PRESIONA START / ENTER O HAZ CLIC EN EL CRONÓMETRO PARA INICIAR'),
+            this.width * 0.5,
+            this.height - 10,
+            11,
+            '#70f8a0',
+            '#090a14',
+            'center'
+        );
 
         ctx.restore();
+    }
+
+    /**
+     * Dibuja las 3 casillas verticales de selección de integrantes [1], [2], [3] de KOF 2002.
+     */
+    _drawVerticalTeamSlots(ctx, playerNum, team, startX, startY, slotW, slotH, gapY) {
+        for (let i = 0; i < 3; i++) {
+            const sy = startY + i * (slotH + gapY);
+            const member = team[i];
+
+            // Borde blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(startX - 2, sy - 2, slotW + 4, slotH + 4);
+            ctx.fillStyle = '#0f142c';
+            ctx.fillRect(startX, sy, slotW, slotH);
+
+            // Insignia roja [1], [2], [3] en la esquina superior izquierda
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(startX, sy, 18, 16);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(String(i + 1), startX + 9, sy + 12);
+
+            if (member) {
+                // Retrato del miembro seleccionado
+                const pCanv = window.PixelArtRenderer.getPortraitCanvas(member, 48, false);
+                ctx.drawImage(pCanv, startX + (slotW - 48) * 0.5, sy + 14);
+
+                // Nombre en miniatura
+                ctx.fillStyle = '#ffea00';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText(member.name.slice(0, 6), startX + slotW * 0.5, sy + slotH - 4);
+            } else {
+                // Casilla vacía
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+                ctx.fillRect(startX + 6, sy + 22, slotW - 12, 36);
+                ctx.fillStyle = '#64748b';
+                ctx.font = '9px monospace';
+                ctx.fillText('LIBRE', startX + slotW * 0.5, sy + 44);
+            }
+        }
     }
 
     _drawHoveredCharacterPreview(ctx, char, x, y, w, h) {

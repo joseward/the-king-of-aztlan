@@ -76,3 +76,68 @@ test('Character Visuals: All 42 characters generate distinct portrait canvases a
   // Verificar que existen más de 5 complexiones corporales distintas (gigante, bajo, femenino, pesado, atlético...)
   assert.ok(bodyTypesFound.size >= 5, `Debe haber al menos 5 tipos de cuerpo distintos (encontrados: ${bodyTypesFound.size})`);
 });
+
+test('KOF 2002 Select Screen: All 42 fighters map to unique, non-overlapping slots in the 9x5 grid around Central Timer', () => {
+  const { loop } = makeLoop();
+  const hud = loop.hud;
+  const tBox = hud.getTimerRect();
+
+  // Verificar dimensiones de la caja del cronómetro central KOF 2002
+  assert.equal(tBox.w, 186, 'Ancho de la caja del cronómetro debe ser 186px');
+  assert.equal(tBox.h, 92, 'Alto de la caja del cronómetro debe ser 92px');
+
+  const occupiedPositions = new Set();
+  for (let i = 0; i < 42; i++) {
+    const slot = hud.getCharacterSlotRect(i);
+    assert.ok(slot.x >= 368 && slot.x + slot.w <= 940, `Slot ${i} debe estar dentro de la cuadrícula horizontal`);
+    assert.ok(slot.y >= 24 && slot.y + slot.h <= 520, `Slot ${i} debe estar dentro de la cuadrícula vertical`);
+
+    // Ninguna casilla debe sobreponerse con la caja del cronómetro
+    const overlapsTimer = (
+      slot.x < tBox.x + tBox.w &&
+      slot.x + slot.w > tBox.x &&
+      slot.y < tBox.y + tBox.h &&
+      slot.y + slot.h > tBox.y
+    );
+    assert.equal(overlapsTimer, false, `Casilla ${i} (${loop.roster[i].name}) no debe solapar el cronómetro central`);
+
+    const key = `${slot.x},${slot.y}`;
+    assert.equal(occupiedPositions.has(key), false, `La posición ${key} no debe estar duplicada para el índice ${i}`);
+    occupiedPositions.add(key);
+  }
+  assert.equal(occupiedPositions.size, 42, 'Debe haber exactamente 42 casillas únicas');
+});
+
+test('KOF 2002 Select Screen: 2D cursor navigation jumps smoothly across Central Timer', () => {
+  const { loop } = makeLoop();
+  
+  // 1. Choi (índice 20, col 2 de fila 2) al moverse a la derecha debe saltar sobre el cronómetro a Geese (índice 21, col 6)
+  assert.equal(loop._moveGridCursor(20, 'right'), 21, 'Debe saltar a la derecha del cronómetro (Choi -> Geese)');
+
+  // 2. Geese (índice 21, col 6 de fila 2) al moverse a la izquierda debe saltar a Choi (índice 20, col 2)
+  assert.equal(loop._moveGridCursor(21, 'left'), 20, 'Debe saltar a la izquierda del cronómetro (Geese -> Choi)');
+
+  // 3. Desde fila 1 cols 3, 4, 5 (índices 12, 13, 14), al bajar debe saltar el cronómetro a fila 3 (índices 27, 28, 29)
+  assert.equal(loop._moveGridCursor(12, 'down'), 27, 'Bajar desde col 3 debe saltar el cronómetro a fila 3');
+  assert.equal(loop._moveGridCursor(13, 'down'), 28, 'Bajar desde col 4 debe saltar el cronómetro a fila 3');
+  assert.equal(loop._moveGridCursor(14, 'down'), 29, 'Bajar desde col 5 debe saltar el cronómetro a fila 3');
+
+  // 4. Desde fila 3 cols 3, 4, 5, al subir debe saltar el cronómetro a fila 1
+  assert.equal(loop._moveGridCursor(27, 'up'), 12, 'Subir desde col 3 debe saltar el cronómetro a fila 1');
+  assert.equal(loop._moveGridCursor(28, 'up'), 13, 'Subir desde col 4 debe saltar el cronómetro a fila 1');
+  assert.equal(loop._moveGridCursor(29, 'up'), 14, 'Subir desde col 5 debe saltar el cronómetro a fila 1');
+});
+
+test('KOF 2002 Select Screen: Big Bust illustrations render for all 42 characters on both 1P (Orange) and 2P (Magenta) frames', () => {
+  const { sandbox } = createSandbox();
+  const renderer = sandbox.window.PixelArtRenderer;
+  const roster = sandbox.window.CHARACTER_ROSTER;
+
+  for (const char of roster) {
+    const p1Bust = renderer.getKOFBigBustCanvas(char, 268, 236, true);
+    assert.ok(p1Bust, `Busto 1P generado para ${char.name}`);
+
+    const p2Bust = renderer.getKOFBigBustCanvas(char, 268, 236, false);
+    assert.ok(p2Bust, `Busto 2P generado para ${char.name}`);
+  }
+});

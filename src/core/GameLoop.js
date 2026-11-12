@@ -58,7 +58,8 @@ class GameLoop {
         this.team1 = [];
         this.team2 = [];
         this.selectCursor = 0;
-        this.selectCursorP2 = 3;
+        this.selectCursorP2 = 33;
+        this.selectTimer = 30.0;
         this.isPaused = false;
         this.pauseCursor = 0;
 
@@ -152,7 +153,8 @@ class GameLoop {
         this.team1 = [];
         this.team2 = [];
         this.selectCursor = 0;
-        this.selectCursorP2 = 3;
+        this.selectCursorP2 = 33;
+        this.selectTimer = 30.0;
         this.inputHandler.resetAll();
         window.AudioSynth.playBGM('select');
     }
@@ -1189,49 +1191,68 @@ class GameLoop {
     }
 
     /**
-     * Calcula el nuevo índice de cursor al moverse en la cuadrícula de 42 personajes.
+     * Calcula el nuevo índice de cursor al moverse en la cuadrícula 9x5 de 42 personajes KOF 2002.
+     * Salta adecuadamente el cronómetro digital central en la Fila 2 (columnas 3, 4, 5).
      */
     _moveGridCursor(cur, dir) {
-        if (dir === 'left') {
-            if (cur < 33) {
-                const col = Math.floor(cur / 3);
-                const row = cur % 3;
-                return ((col - 1 + 11) % 11) * 3 + row;
+        const getSlotPos = (i) => {
+            if (i < 18) return { row: Math.floor(i / 9), col: i % 9 };
+            if (i <= 20) return { row: 2, col: i - 18 };
+            if (i <= 23) return { row: 2, col: (i - 21) + 6 };
+            if (i <= 32) return { row: 3, col: i - 24 };
+            return { row: 4, col: i - 33 };
+        };
+        const getIndexAt = (row, col) => {
+            if (row === 0) return col;
+            if (row === 1) return 9 + col;
+            if (row === 2) {
+                if (col <= 2) return 18 + col;
+                if (col >= 6) return 21 + (col - 6);
+                return null;
             }
-            return 33 + (((cur - 33) - 1 + 9) % 9);
-        }
+            if (row === 3) return 24 + col;
+            if (row === 4) return 33 + col;
+            return null;
+        };
+
+        let { row, col } = getSlotPos(cur);
         if (dir === 'right') {
-            if (cur < 33) {
-                const col = Math.floor(cur / 3);
-                const row = cur % 3;
-                return ((col + 1) % 11) * 3 + row;
+            let nc = col + 1;
+            if (row === 2) {
+                if (col === 2) nc = 6;
+                else if (nc > 8) nc = 0;
+            } else if (nc > 8) {
+                nc = 0;
             }
-            return 33 + (((cur - 33) + 1) % 9);
-        }
-        if (dir === 'up') {
-            if (cur < 33) {
-                const col = Math.floor(cur / 3);
-                const row = cur % 3;
-                return row > 0 ? col * 3 + (row - 1) : 33 + Math.min(8, col);
+            col = nc;
+        } else if (dir === 'left') {
+            let nc = col - 1;
+            if (row === 2) {
+                if (col === 6) nc = 2;
+                else if (nc < 0) nc = 8;
+            } else if (nc < 0) {
+                nc = 8;
             }
-            return (cur - 33) * 3 + 2;
+            col = nc;
+        } else if (dir === 'down') {
+            let nr = (row + 1) % 5;
+            if (nr === 2 && col >= 3 && col <= 5) nr = 3;
+            row = nr;
+        } else if (dir === 'up') {
+            let nr = (row - 1 + 5) % 5;
+            if (nr === 2 && col >= 3 && col <= 5) nr = 1;
+            row = nr;
         }
-        if (dir === 'down') {
-            if (cur < 33) {
-                const col = Math.floor(cur / 3);
-                const row = cur % 3;
-                return row < 2 ? col * 3 + (row + 1) : 33 + Math.min(8, col);
-            }
-            return (cur - 33) * 3;
-        }
-        return cur;
+
+        const target = getIndexAt(row, col);
+        return target !== null ? target : cur;
     }
 
     /**
      * Quita el último personaje seleccionado o regresa a Modos de Pelea si el equipo está vacío.
      */
     _handleTeamSelectBack() {
-        window.AudioSynth.play('select');
+        window.AudioSynth.play('cursor_move');
         const isOnline = Boolean(this.networkManager && this.networkManager.isOnline);
         if (isOnline) {
             if (this.networkManager.role === 'HOST') {
@@ -1268,6 +1289,30 @@ class GameLoop {
 
         const isOnline = Boolean(this.networkManager && this.networkManager.isOnline);
 
+        // Cuenta regresiva del cronómetro KOF 2002
+        if (typeof this.selectTimer === 'number') {
+            this.selectTimer = Math.max(0, this.selectTimer - (1 / 60));
+            if (this.selectTimer <= 0) {
+                const available = this.roster.filter(c => !this.team1.some(t => t.id === c.id) && !this.team2.some(t => t.id === c.id));
+                while (this.team1.length < 3 && available.length > 0) {
+                    this.team1.push(available.shift());
+                }
+                const isArcade12 = this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL';
+                if (!isArcade12) {
+                    while (this.team2.length < 3 && available.length > 0) {
+                        this.team2.push(available.shift());
+                    }
+                }
+                window.AudioSynth.play('super');
+                if (isOnline) {
+                    this.networkManager.sendMatchStart();
+                } else {
+                    this.startArcadeStage(this.currentStageNumber);
+                }
+                return;
+            }
+        }
+
         if (p1.startPressed || p2.startPressed) {
             window.AudioSynth.play('super');
             if (isOnline) {
@@ -1299,7 +1344,7 @@ class GameLoop {
             if (moved) {
                 if (isHost) this.selectCursor = cur;
                 else this.selectCursorP2 = cur;
-                window.AudioSynth.play('select');
+                window.AudioSynth.play('cursor_move');
             }
 
             if (localInput.pressed.LP || localInput.pressed.LK || localInput.pressed.HP) {
@@ -1327,7 +1372,7 @@ class GameLoop {
             moved = true;
         }
         if (moved) {
-            window.AudioSynth.play('select');
+            window.AudioSynth.play('cursor_move');
         }
 
         if (p1.pressed.LP || p1.pressed.LK || p1.pressed.HP || p2.pressed.LP || p2.pressed.LK || p2.pressed.HP) {
@@ -1388,7 +1433,7 @@ class GameLoop {
         if (!chosen) return;
 
         const isOnline = Boolean(this.networkManager && this.networkManager.isOnline);
-        window.AudioSynth.play('select');
+        window.AudioSynth.play('choose_char');
 
         if (isOnline) {
             if (this.networkManager.role === 'HOST') {
@@ -1588,16 +1633,7 @@ class GameLoop {
 
             if (this.phase !== GamePhase.TEAM_SELECT) return;
 
-            // 1. Verificar clic en cualquiera de las 11 insignias de Equipos Oficiales (selecciona el equipo completo de 3)
-            for (let col = 0; col < 11; col++) {
-                const hdr = this.hud.getOfficialTeamHeaderRect(col);
-                if (mx >= hdr.x && mx <= hdr.x + hdr.w && my >= hdr.y && my <= hdr.y + hdr.h) {
-                    this._selectOfficialTeam(col);
-                    return;
-                }
-            }
-
-            // 2. Verificar clic en las 42 celdas del roster de personajes
+            // 1. Clic en las 42 celdas del roster de personajes
             for (let i = 0; i < this.roster.length; i++) {
                 const slot = this.hud.getCharacterSlotRect(i);
                 if (mx >= slot.x && mx <= slot.x + slot.w && my >= slot.y && my <= slot.y + slot.h) {
@@ -1611,8 +1647,19 @@ class GameLoop {
                 }
             }
 
-            // 3. Verificar clic en el botón "¡PELEAR!" (x: 320..452, y: 474..514)
-            if (mx >= 320 && mx <= 452 && my >= 474 && my <= 514) {
+            // 2. Clic en el cronómetro digital central de KOF 2002 para iniciar combate de inmediato
+            const tBox = this.hud.getTimerRect();
+            if (mx >= tBox.x && mx <= tBox.x + tBox.w && my >= tBox.y && my <= tBox.y + tBox.h) {
+                const available = this.roster.filter(c => !this.team1.some(t => t.id === c.id) && !this.team2.some(t => t.id === c.id));
+                while (this.team1.length < 3 && available.length > 0) {
+                    this.team1.push(available.shift());
+                }
+                const isArcade12 = this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL';
+                if (!isArcade12) {
+                    while (this.team2.length < 3 && available.length > 0) {
+                        this.team2.push(available.shift());
+                    }
+                }
                 window.AudioSynth.play('super');
                 if (this.networkManager && this.networkManager.isOnline) {
                     this.networkManager.sendMatchStart();
@@ -1622,28 +1669,16 @@ class GameLoop {
                 return;
             }
 
-            // 4. Verificar clic en el botón "LIMPIAR" (x: 460..544, y: 474..514)
-            if (mx >= 460 && mx <= 544 && my >= 474 && my <= 514) {
-                window.AudioSynth.play('select');
-                if (this.networkManager && this.networkManager.isOnline) {
-                    if (this.networkManager.role === 'HOST') {
-                        this.team1 = [];
-                    } else {
-                        this.team2 = [];
+            // 3. Clic en las casillas verticales del equipo 1P (x: 298..354) para quitar personaje seleccionado
+            if (mx >= 298 && mx <= 354) {
+                for (let s = 0; s < 3; s++) {
+                    const sy = 24 + s * (72 + 10);
+                    if (my >= sy && my <= sy + 72 && this.team1[s]) {
+                        this.team1.splice(s, 1);
+                        window.AudioSynth.play('cursor_move');
+                        return;
                     }
-                    this.networkManager.sendClearTeam();
-                } else {
-                    this.team1 = [];
-                    this.team2 = [];
                 }
-                return;
-            }
-
-            // 5. Verificar clic en el botón "◄ MODOS" (x: 552..640, y: 474..514)
-            if (mx >= 552 && mx <= 640 && my >= 474 && my <= 514) {
-                window.AudioSynth.play('select');
-                this.openModeSelect();
-                return;
             }
         });
 
@@ -1659,9 +1694,15 @@ class GameLoop {
                 const slot = this.hud.getCharacterSlotRect(i);
                 if (mx >= slot.x && mx <= slot.x + slot.w && my >= slot.y && my <= slot.y + slot.h) {
                     if (this.networkManager && this.networkManager.isOnline && this.networkManager.role === 'GUEST') {
-                        this.selectCursorP2 = i;
+                        if (this.selectCursorP2 !== i) {
+                            this.selectCursorP2 = i;
+                            window.AudioSynth.play('cursor_move');
+                        }
                     } else {
-                        this.selectCursor = i;
+                        if (this.selectCursor !== i) {
+                            this.selectCursor = i;
+                            window.AudioSynth.play('cursor_move');
+                        }
                     }
                     return;
                 }
@@ -1723,11 +1764,12 @@ class GameLoop {
                 team2: this.team2,
                 cursorIndex: activePreviewIdx,
                 p1Cursor: this.selectCursor,
-                p2Cursor: isOnline ? this.selectCursorP2 : null,
+                p2Cursor: isOnline ? this.selectCursorP2 : (this.selectCursorP2 !== undefined ? this.selectCursorP2 : 33),
                 isOnline,
                 onlineRole: isOnline ? this.networkManager.role : null,
                 roomCode: isOnline ? this.networkManager.roomCode : '',
-                gameMode: this.gameMode
+                gameMode: this.gameMode,
+                selectTimer: this.selectTimer
             });
             return;
         }

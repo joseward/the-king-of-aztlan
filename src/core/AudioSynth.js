@@ -334,14 +334,18 @@ class ArcadeAudioSynth {
                 this._playSubBoom(45, 14, 0.65, 0.65);
                 break;
 
+            case 'cursor_move':
             case 'select':
             case 'menu_move':
-                this._playTone(540, 820, 0.05, 'square', 0.16);
+                // Crisp Neo-Geo select blip: sharp square wave click with immediate attack & decay
+                this._playTone(940, 1380, 0.032, 'square', 0.22);
                 break;
 
+            case 'choose_char':
             case 'menu_confirm':
-                this._playTone(660, 990, 0.08, 'triangle', 0.24);
-                this._playTone(880, 1320, 0.12, 'square', 0.20);
+                // Contundente bloqueo/confirmación de personaje estilo arcade
+                this._playTone(560, 960, 0.09, 'square', 0.28);
+                this._playTone(280, 560, 0.12, 'sawtooth', 0.24);
                 break;
 
             case 'menu_back':
