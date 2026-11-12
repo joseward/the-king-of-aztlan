@@ -198,12 +198,14 @@ class GameLoop {
      */
     startArcadeStage(stageNum) {
         this.currentStageNumber = Math.max(1, Math.min(12, stageNum));
+        this.team1Index = 0;
+        this.team2Index = 0;
         while (this.team1.length < 3) {
             const candidate = this.roster.find(r => !this.team1.includes(r)) || this.roster[0];
             this.team1.push(candidate);
         }
 
-        if (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL') {
+        if (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL' || this.gameMode === 'FREE_3V3') {
             this.team2 = this._buildEnemyTeamForStage(this.currentStageNumber);
         } else {
             while (this.team2.length < 3) {
@@ -264,13 +266,19 @@ class GameLoop {
         // Música especial para el Nivel 12 (Omega Rugal) o música de pelea estándar
         window.AudioSynth.playBGM(this.currentStageNumber === 12 ? 'boss_rugal' : 'stage');
 
+        const stageInfo = window.StageRenderer?.getStageInfo(this.currentStageNumber) || { name: `NIVEL ${this.currentStageNumber}` };
         const stagePrefix = isPractice
             ? 'MODO ENTRENAMIENTO'
-            : ((this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL')
-                ? `NIVEL ${this.currentStageNumber}/12`
-                : `ASALTO ${this.roundNumber}`);
+            : `NIVEL ${this.currentStageNumber} DE 12 — ${stageInfo.name.toUpperCase()}`;
 
-        this._beginRoundIntro(stagePrefix, `${this.fighter1.name} VS ${this.fighter2.name}`);
+        const enemyLabel = this.team2Index === 2 ? 'LÍDER FINAL' : `OPONENTE ${this.team2Index + 1}/3`;
+        const stageSubtitle = isPractice
+            ? 'PRACTICA COMBOS Y MOVIMIENTOS ESPECIALES'
+            : (this.currentStageNumber === 12
+                ? '¡COMBATE DECISIVO CONTRA OMEGA RUGAL!'
+                : `${this.fighter1.name.toUpperCase()} VS ${this.fighter2.name.toUpperCase()} (${enemyLabel})`);
+
+        this._beginRoundIntro(stagePrefix, stageSubtitle);
     }
 
     _beginRoundIntro(title, subtitle) {
@@ -560,11 +568,14 @@ class GameLoop {
             if (p1Input.pressed.LP || p1Input.pressed.HP || p2Input.pressed.LP || p2Input.pressed.HP || p1Input.startPressed || p2Input.startPressed) {
                 if (this.networkManager && this.networkManager.isOnline) {
                     this.networkManager.sendMatchStart();
-                } else if ((this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL') && this.currentStageNumber >= 12 && this.team2Index >= 3) {
+                } else if ((this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL' || this.gameMode === 'FREE_3V3') && this.currentStageNumber >= 12 && this.team2Index >= 3) {
                     this.phase = GamePhase.TEAM_ENDING;
                     this.phaseTimer = 0;
                     window.AudioSynth.playBGM('victory');
                 } else {
+                    if (this.team2Index >= 3 && this.currentStageNumber < 12) {
+                        this.currentStageNumber++;
+                    }
                     this.startArcadeStage(this.currentStageNumber);
                 }
             }
@@ -898,9 +909,10 @@ class GameLoop {
         if (this.team1Index >= 3 || this.team2Index >= 3) {
             const p1Won = this.team2Index >= 3;
 
-            // Si estamos en el Torneo Arcade de 12 Niveles y ganó el Jugador 1
-            if (p1Won && this.gameMode === 'ARCADE_12' && this.currentStageNumber < 12) {
+            // Si ganó el Jugador 1 en Modo Arcade o Equipo vs CPU y no es el nivel final (Nivel 12)
+            if (p1Won && (this.gameMode === 'ARCADE_12' || this.gameMode === 'FREE_3V3') && this.currentStageNumber < 12) {
                 this.currentStageNumber++;
+                window.AudioSynth.play('super');
                 this.startArcadeStage(this.currentStageNumber);
                 return;
             }
@@ -913,16 +925,16 @@ class GameLoop {
                 this.fighter2.setState(window.FighterState.VICTORY);
             }
 
-            if (p1Won && (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL') && this.currentStageNumber >= 12) {
+            if (p1Won && (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL' || this.gameMode === 'FREE_3V3') && this.currentStageNumber >= 12) {
                 this.announcement = {
                     text: '¡¡OMEGA RUGAL DERROTADO!!',
-                    subtext: '¡CAMPEÓN DE AZTLAN! (U/START: JUGAR DE NUEVO • P/ESC: MODOS)',
+                    subtext: '¡CAMPEÓN DE AZTLAN! (U/START: VER FINAL • P/ESC: MODOS)',
                     color: '#ffea00'
                 };
             } else {
                 this.announcement = {
                     text: p1Won ? `¡NIVEL ${this.currentStageNumber} SUPERADO! ¡GANASTE!` : 'DERROTA — ¿CONTINUAR?',
-                    subtext: 'U/START: REINTENTAR  •  P/ESC/SELECT: VOLVER AL MENÚ DE MODOS',
+                    subtext: p1Won ? 'U/START: SIGUIENTE NIVEL  •  P/ESC: VOLVER AL MENÚ DE MODOS' : 'U/START: REINTENTAR  •  P/ESC: VOLVER AL MENÚ DE MODOS',
                     color: p1Won ? '#00ffc3' : '#ff3366'
                 };
             }
@@ -968,9 +980,10 @@ class GameLoop {
             this.fighter1.setState(window.FighterState.IDLE);
         }
 
+        const enemyRole = (this.team2Index === 2) ? '¡LÍDER FINAL DEL EQUIPO!' : `OPONENTE ${this.team2Index + 1} DE 3`;
         this._beginRoundIntro(
-            this.fighter2.template.isBoss ? '¡ALERTA: ENTRA OMEGA RUGAL!' : '¡SIGUIENTE RETADOR!',
-            `${this.fighter1.name} (${this.team1Index + 1}/3)  VS  ${this.fighter2.name} (${this.team2Index + 1}/3)`
+            this.fighter2.template.isBoss ? '¡ALERTA: ENTRA OMEGA RUGAL!' : `¡ROUND ${this.roundNumber} — ${enemyRole}!`,
+            `NIVEL ${this.currentStageNumber}/12 • ${this.fighter1.name.toUpperCase()} (${this.team1Index + 1}/3) VS ${this.fighter2.name.toUpperCase()} (${this.team2Index + 1}/3)`
         );
     }
 
@@ -1560,9 +1573,14 @@ class GameLoop {
                     this.networkManager.sendMatchStart();
                     return;
                 }
-                if (this.gameMode === 'ARCADE_12' && this.currentStageNumber >= 12 && this.team2Index >= 3) {
-                    this.openTitleScreen();
+                if ((this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL' || this.gameMode === 'FREE_3V3') && this.currentStageNumber >= 12 && this.team2Index >= 3) {
+                    this.phase = GamePhase.TEAM_ENDING;
+                    this.phaseTimer = 0;
+                    window.AudioSynth.playBGM('victory');
                 } else {
+                    if (this.team2Index >= 3 && this.currentStageNumber < 12) {
+                        this.currentStageNumber++;
+                    }
                     this.startArcadeStage(this.currentStageNumber);
                 }
                 return;

@@ -854,7 +854,7 @@ const CHARACTER_ROSTER = [
     createFighterTemplate({
         id: 'chin', name: 'CHIN GENTSAI', teamId: 'psycho', teamName: 'TEAM PSYCHO SOLDIER', title: 'Maestro del Puño Borracho',
         hp: 980, speed: 4.3, atk: 1.04,
-        bodyType: 'elder_master', hairStyle: 'tori_mask', hairColor: '#e2e8f0', outfitStyle: 'karate_gi',
+        bodyType: 'elder_master', hairStyle: 'elder_beard', hairColor: '#e2e8f0', outfitStyle: 'karate_gi', accessory: 'sake_gourd',
         primaryColor: '#166534', secondaryColor: '#fef08a', pantsColor: '#14532d', skinColor: '#d49464', energyColor: '#f97316',
         qcfName: 'KiryuuRaisen (Fuego)', dpName: 'Kaiten Teki', qcbName: 'Suikan Kanou', dmName: 'Gou Ran Enpou',
         sigArchetype: 'COUNTER', sigName: 'Postura del Maestro Ebrio (214+P)'

@@ -54,15 +54,15 @@ class HUD {
         ctx.save();
 
         // 1. Bloque Superior (Retratos de esquina, Barras de Salud y Caja Central de Timer)
-        this._drawTopNeoGeoHUD(ctx, fighter1, fighter2, team1, team2, team1Index, team2Index, timerSeconds);
+        this._drawTopNeoGeoHUD(ctx, fighter1, fighter2, team1, team2, team1Index, team2Index, timerSeconds, matchState.currentStageNumber);
 
         // 2. Bloque Inferior (Dígito de Stock, Cápsula MÁXIMO, NV-1 y CRÉDITO)
         this._drawBottomNeoGeoPowerHUD(ctx, 1, fighter1);
         this._drawBottomNeoGeoPowerHUD(ctx, 2, fighter2);
 
-        // Etiquetas inferiores arcade (NV-X y botón de Menú en el centro, CRÉDITOS bajo las barras)
-        const stLabel = matchState.currentStageNumber ? `NV-${matchState.currentStageNumber}` : 'NV-1';
-        this._drawPixelString(ctx, stLabel, this.width * 0.5, this.height - 34, 12, '#ffea00', '#090a14', 'center');
+        // Etiquetas inferiores arcade (NIVEL X DE 12 y botón de Menú en el centro, CRÉDITOS bajo las barras)
+        const stLabel = matchState.currentStageNumber ? `NIVEL ${matchState.currentStageNumber} DE 12` : 'NIVEL 1 DE 12';
+        this._drawPixelString(ctx, stLabel, this.width * 0.5, this.height - 35, 12, '#ffea00', '#090a14', 'center');
 
         // Botón interactivo de Menú / Pausa en la parte central inferior del combate
         const menuBtnX = this.width * 0.5 - 76;
@@ -92,7 +92,7 @@ class HUD {
     /**
      * Dibuja toda la estructura superior unificada estilo captura de referencia Neo-Geo.
      */
-    _drawTopNeoGeoHUD(ctx, fighter1, fighter2, team1, team2, team1Index, team2Index, timerSeconds) {
+    _drawTopNeoGeoHUD(ctx, fighter1, fighter2, team1, team2, team1Index, team2Index, timerSeconds, stageNumber = 1) {
         const cx = Math.floor(this.width * 0.5);
         const timerBoxW = 84;
         const timerLeft = cx - timerBoxW * 0.5;
@@ -149,13 +149,28 @@ class HUD {
             window.PixelArtRendererClass.drawArcadeDigit(ctx, secStr[1], cx + 4, 24, 4, digitFill, digitShade, '#080814');
         }
 
+        // Placa Central de Nivel Arcade Neo-Geo debajo del timer
+        const badgeW = 96;
+        const badgeH = 18;
+        const badgeX = cx - badgeW * 0.5;
+        const badgeY = 70;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(badgeX - 1, badgeY - 1, badgeW + 2, badgeH + 2);
+        ctx.fillStyle = stageNumber === 12 ? '#590a18' : '#14182e';
+        ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+        const stageBadgeText = stageNumber === 12 ? 'JEFE FINAL' : `NIVEL ${stageNumber}/12`;
+        this._drawPixelString(ctx, stageBadgeText, cx, badgeY + 13, 11, stageNumber === 12 ? '#ff4d88' : '#ffea00', '#000000', 'center');
+
         // D. Retratos Pixel-Art en las esquinas superiores con marco blanco biselado
         this._drawCornerPortrait(ctx, fighter1.template, p1PortraitX, portraitY, portraitSize, false);
         this._drawCornerPortrait(ctx, fighter2.template, p2PortraitX, portraitY, portraitSize, true);
 
-        // E. Nombres de los personajes en rosa/magenta pixelado bajo la barra de salud
-        this._drawPixelString(ctx, fighter1.name, p1BarX + 12, barY + barH + 18, 16, '#ff4d88', '#14081c', 'left');
-        this._drawPixelString(ctx, fighter2.name, p2PortraitX - 12, barY + barH + 18, 16, '#ff4d88', '#14081c', 'right');
+        // E. Nombres de los personajes e indicador de orden de equipo 3v3
+        const p1NameStr = `${fighter1.name} (1P · ${team1Index + 1}/3)`;
+        const p2RoleTag = team2Index === 2 ? '★ LÍDER' : `OPONENTE ${team2Index + 1}/3`;
+        const p2NameStr = `${fighter2.name} (${p2RoleTag})`;
+        this._drawPixelString(ctx, p1NameStr, p1BarX + 12, barY + barH + 18, 15, '#ff4d88', '#14081c', 'left');
+        this._drawPixelString(ctx, p2NameStr, p2PortraitX - 12, barY + barH + 18, 15, team2Index === 2 ? '#ffbe0b' : '#ff4d88', '#14081c', 'right');
 
         // F. Mini-indicadores de orden de equipo 3v3 (1ST, 2ND, 3RD)
         this._drawTeamOrderPips(ctx, team1, team1Index, fighter1.hp <= 0, timerLeft - 118, barY + barH + 6);

@@ -125,10 +125,10 @@ class PixelArtRenderer {
         octx.fillRect(0, size - p * 4, size, p * 4);
         octx.globalAlpha = 1.0;
 
-        // Elegir silueta de cabeza/peinado para el retrato 19x19
+        // Elegir silueta de cabeza/peinado única para el retrato Neo-Geo 19x19
         let portraitMatrix;
         if (hs === 'tall_pillar') {
-            // Benimaru: Torre alta de cabello rubio
+            // Benimaru: Torre vertical alta de cabello rubio
             portraitMatrix = [
                 '.....HHHHHHHHH.....',
                 '.....HHHHHHHHH.....',
@@ -148,7 +148,7 @@ class PixelArtRenderer {
                 'CCCCCCCCCCCCCCCCCCC'
             ];
         } else if (hs === 'cap_ponytail') {
-            // Terry Bogard / Clark: Gorra con frente blanco y visera
+            // Terry Bogard / Clark: Gorra de camionero con frente blanco y visera
             portraitMatrix = [
                 '....CCCCCCCCCCC....',
                 '..CCCCBBBBBBBCCCC..',
@@ -167,8 +167,8 @@ class PixelArtRenderer {
                 'CCCCCCCCBBBCCCCCCCC',
                 'CCCCCCCCCCCCCCCCCCC'
             ];
-        } else if (hs === 'bald_beard') {
-            // Chang Koehan: Calvo con gran barba negra
+        } else if (hs === 'bald_beard' || hs === 'elder_beard') {
+            // Chang Koehan / Chin Gentsai: Calvo con gran barba espesa
             portraitMatrix = [
                 '.....SSSSSSSSS.....',
                 '...SSSSSSSSSSSSS...',
@@ -188,7 +188,7 @@ class PixelArtRenderer {
                 'CCCCCCCCCCCCCCCCCCC'
             ];
         } else if (hs === 'bangs_over_eye') {
-            // Iori Yagami / Shermie: Flequillo largo cubriendo parte del rostro
+            // Iori Yagami / Shermie: Flequillo largo sobre el ojo y cuello alto
             portraitMatrix = [
                 '....HHHHHHHHHHH....',
                 '..HHHHHHHHHHHHHHH..',
@@ -207,16 +207,16 @@ class PixelArtRenderer {
                 'CCCCCCCCCCCCCCCCCCC',
                 'CCCCCCCCCCCCCCCCCCC'
             ];
-        } else if (hs === 'fedora_claws' || hs === 'sunglasses_bald') {
-            // Choi / Mr. Big: Sombrero o calvo con gafas oscuras
+        } else if (hs === 'fedora_claws') {
+            // Choi Bounge: Sombrero fedora con sombra y ojos rojos luminosos
             portraitMatrix = [
-                '....HHHHHHHHHHH....',
-                '..HHHHHHHHHHHHHHH..',
-                'HHHHHHHHHHHHHHHHHHH',
-                '....SSSSSSSSSSS....',
-                '...SEEEEESEEEEES...',
-                '...SEEEEESEEEEES...',
-                '...SSSSSSSSSSSSS...',
+                '....RRRRRRRRRRR....',
+                '..RRRRRRRRRRRRRRR..',
+                'RRRRRRRRRRRRRRRRRRR',
+                '....KKKKKKKKKKK....',
+                '...KEEEEKEKEEEEKK...',
+                '...KWWEKKKKWWERK...',
+                '...KKKKKKKKKKKKK...',
                 '....SSSSNNNSSSS....',
                 '....SSSMMMMMSSS....',
                 '.....SSSSSSSSS.....',
@@ -227,11 +227,231 @@ class PixelArtRenderer {
                 'CCCCCCCCCCCCCCCCCCC',
                 'CCCCCCCCCCCCCCCCCCC'
             ];
-        } else {
-            // Estándar estilizado KOF (Kyo, Ryo, Mai, Athena, K', Rugal, etc.)
+        } else if (hs === 'sunglasses_bald') {
+            // Mr. Big / Agentes: Calvo con gafas oscuras rectangulares
+            portraitMatrix = [
+                '.....SSSSSSSSS.....',
+                '...SSSSSSSSSSSSS...',
+                '..SSSSSSSSSSSSSSS..',
+                '..SEEEEEESEEEEES..',
+                '..SEEEEEESEEEEES..',
+                '..SSSSSSNNNSSSSSS..',
+                '...SSSSSNNNSSSSS...',
+                '....SSSMMMMMSSS....',
+                '....HHHMMMMMHHH....',
+                '.....HHHHHHHHH.....',
+                '......DDDDDDD......',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCCCCCCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC'
+            ];
+        } else if (hs === 'slick_blonde') {
+            // Geese Howard / Krauser: Cabello rubio engominado hacia atrás
             portraitMatrix = [
                 '....HHHHHHHHHHH....',
                 '..HHHHHHHHHHHHHHH..',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '.HSSSWESSSSSWESSSH.',
+                '.HSSSSSSSSSSSSSSSH.',
+                '..SSSSSSNNNSSSSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCBBBCCCCCCCC'
+            ];
+        } else if (hs === 'short_bob') {
+            // Vanessa / Angel / May Lee / Blue Mary: Melena corta y femenina
+            portraitMatrix = [
+                '...HHHHHHHHHHHHH...',
+                '..HHHHHHHHHHHHHHH..',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHSSSSSSSSHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSWESSSSSWESSHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '..HHSSSSNNNSSSSHH..',
+                '..HHSSSSSSSSSSSHH..',
+                '...HSSSMMMMMSSSH...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCBBBCCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC'
+            ];
+        } else if (hs === 'long_flowing') {
+            // Mai / Athena / Leona / Kula / Whip: Coleta alta o melena larga
+            portraitMatrix = [
+                '....HHHHBBBBHHHH...',
+                '..HHHHHBBBBBBHHHH..',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHSSSSSSSSHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSWESSSSSWESSHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '..HSSSSSNNNSSSSSH..',
+                '..HSSSSSSSSSSSSSH..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '..H..DDDDDDDDD..H..',
+                '.HHCCCDDDDDDDCCCHH.',
+                'HHCCCCCDDDDDCCCCCHH',
+                'HHCCCCCCCCCCCCCCCC.',
+                '..CCCCCCCCCCCCCCC..'
+            ];
+        } else if (hs === 'spiky_white') {
+            // K' (K-Dash): Picos plateados de anime y gafas de sol
+            portraitMatrix = [
+                '..H..HH..HH..HH..H.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHSEEEEESEEEEESHH.',
+                '.HHSEEEEESEEEEESHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '..SSSSSSNNNSSSSSS..',
+                '...SSSSSNNNSSSSS...',
+                '....SSSMMMMMSSS....',
+                '.....SSSSSSSSS.....',
+                '......DDDDDDD......',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCRRRCCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC'
+            ];
+        } else if (hs === 'cyborg_pompadour') {
+            // Maxima: Pompadour oscuro con implante cibernético metálico
+            portraitMatrix = [
+                '....HHHHHHHHHHH....',
+                '..HHHHHHHHHHHHHHH..',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.ZZZSSSSSSSSSSSHHH.',
+                '.ZZSSSSSSSSSSSSSHH.',
+                '.ZSSSWESSSSSWESSSH.',
+                '.ZSSSSSSSSSSSSSSSH.',
+                '..SSSSSSNNNSSSSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCZZZCCCCCCCC'
+            ];
+        } else if (hs === 'tori_mask') {
+            // Takuma Sakazaki: Máscara Tengu roja de gran nariz
+            portraitMatrix = [
+                '....HHHHHHHHHHH....',
+                '..HHHHHHHHHHHHHHH..',
+                '.RRRRRRRRRRRRRRRRR.',
+                '.RRRRRRRRRRRRRRRRR.',
+                '.RRRSWESSSSSWESRRR.',
+                '.RRRSSSSSSSSSSSRRR.',
+                '..RRRRRRRRRRRRRRR..',
+                '...RRRRRNNNRRRRR...',
+                '....RRRNNNNNRRR....',
+                '.....RNNNNNNNR.....',
+                '....BBBBBBBBBBB....',
+                '.....DDDDDDDDD.....',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCCCCCCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC'
+            ];
+        } else if (hs === 'mohawk_agent') {
+            // Seth: Cresta mohawk rubia sobre piel oscura
+            portraitMatrix = [
+                '.......HHHHH.......',
+                '.......HHHHH.......',
+                '.......HHHHH.......',
+                '.......HHHHH.......',
+                '....SSSSSSSSSSS....',
+                '...SSSSSSSSSSSSS...',
+                '..SSSSWESSSWESSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSSNNNSSSSS...',
+                '....SSSMMMMMSSS....',
+                '.....SSSSSSSSS.....',
+                '......DDDDDDD......',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCDDDDDCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC'
+            ];
+        } else if (hs === 'boss_rugal') {
+            // Omega Rugal: Cabello plateado peinado, ojo cibernético carmesí radiante
+            portraitMatrix = [
+                '....HHHHHHHHHHH....',
+                '..HHHHHHHHHHHHHHH..',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '.HSSSWESSSSSWWSSH.',
+                '.HSSSSSSSSSSWWRSSH.',
+                '..SSSSSSNNNSSSSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...GGGDDDDDDDGGG...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCRRRCCCCCCCC'
+            ];
+        } else if (hs === 'blue_spiky_cape') {
+            // K9999: Picos azules desordenados y cuello de capa roja
+            portraitMatrix = [
+                '..H..HH..HH..HH..H.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '.HSSSWESSSSSWESSSH.',
+                '.HSSSSSSSSSSSSSSSH.',
+                '..SSSSSSNNNSSSSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...RRRDDDDDDDRRR...',
+                '.RRRRCCDDDDDCCRRRR.',
+                'RRRRCCCCCCCCCCCRRRR',
+                'RRRRRRRRRRRRRRRRRRR'
+            ];
+        } else if (hs === 'eyepatch_lucha') {
+            // Ramon: Parche de lucha libre cubriendo el ojo izquierdo
+            portraitMatrix = [
+                '....HHHHHHHHHHH....',
+                '..HHHHHHHHHHHHHHH..',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '.HSSSWESSSSSKKKSSH.',
+                '.HSSSSSSSSSSKKKSSH.',
+                '..SSSSSSNNNSSSSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCDDDCCCCCCCC',
+                'CCCCCCCCCCCCCCCCCCC'
+            ];
+        } else if (hs === 'spiky_bandana' || hs === 'bald_headband') {
+            // Joe Higashi / Ralf / Daimon: Bandana frontal con nudo
+            portraitMatrix = [
+                '..H..HH..HH..HH..H.',
+                '.HHHHHHHHHHHHHHHHH.',
                 '.HHHHHHHHHHHHHHHHH.',
                 '.BBBBBBBBBBBBBBBBB.',
                 '.HHHSSSSSSSSSSSHHH.',
@@ -247,9 +467,29 @@ class PixelArtRenderer {
                 '.CCCCCCDDDDDCCCCCC.',
                 'CCCCCCCCDDDCCCCCCCC'
             ];
+        } else {
+            // Clásico estilizado (Kyo, Ryo, Andy, Robert, Kim, Yashiro, Shingo, etc.) SIN cinta blanca en la frente
+            portraitMatrix = [
+                '..H..HH..HH..HH..H.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHHHHHHHHHHHHHH.',
+                '.HHHHSSSSSSSSHHHHH.',
+                '.HHHSSSSSSSSSSSHHH.',
+                '.HHSSSSSSSSSSSSSHH.',
+                '.HSSSWESSSSSWESSSH.',
+                '.HSSSSSSSSSSSSSSSH.',
+                '..SSSSSSNNNSSSSSS..',
+                '..SSSSSSSSSSSSSSS..',
+                '...SSSSMMMMMSSSS...',
+                '....SSSSSSSSSSS....',
+                '.....DDDDDDDDD.....',
+                '...CCCDDDDDDDCCC...',
+                '.CCCCCCDDDDDCCCCCC.',
+                'CCCCCCCCDDDCCCCCCCC'
+            ];
         }
 
-        const isRugal = vis.bodyType === 'boss_rugal';
+        const isRugal = vis.bodyType === 'boss_rugal' || hs === 'boss_rugal';
         const palette = {
             H: vis.hairColor || '#1c1526',
             B: vis.secondaryColor || '#ffffff',
@@ -259,7 +499,11 @@ class PixelArtRenderer {
             E: hs === 'eyepatch_lucha' ? '#000000' : '#0f0c1b',
             N: '#a46942',
             M: '#7a2e2e',
-            C: vis.primaryColor || '#1e293b'
+            C: vis.primaryColor || '#1e293b',
+            G: '#ffea00',
+            R: '#dc2626',
+            K: '#0b0814',
+            Z: '#38bdf8'
         };
 
         PixelArtRenderer.drawBitmapMatrix(octx, portraitMatrix, palette, 0, p, p);
@@ -541,7 +785,7 @@ class PixelArtRenderer {
         // 1. ELEMENTOS TRASEROS: Capa de K9999, Cabello largo (Mai/Athena/Leona/Kula/Andy), o Cinta de cabeza
         if (!isSilhouette) {
             const waveY = Math.round(Math.sin(f * 0.26) * 7);
-            if (hairStyle === 'blue_spiky_cape') {
+            if (hairStyle === 'blue_spiky_cape' || charId === 'k9999') {
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) - 12, Math.round(shoulderY / p) + 1, 7, 26, '#dc2626', '#991b1b', cOutline, p);
             } else if (hairStyle === 'long_flowing' || hairStyle === 'cap_ponytail' || hairStyle === 'ponytail_sleek') {
                 PixelArtRenderer.drawPixelLimb(
@@ -570,7 +814,7 @@ class PixelArtRenderer {
                     p
                 );
             }
-            if (outfit === 'kunoichi_red') {
+            if (outfit === 'kunoichi_red' || charId === 'mai') {
                 PixelArtRenderer.drawPixelLimb(
                     ctx,
                     -10,
@@ -583,6 +827,34 @@ class PixelArtRenderer {
                     cOutline,
                     p
                 );
+            }
+
+            // Insignia de Estrella Blanca en la espalda de la chaqueta de Terry Bogard
+            if (charId === 'terry') {
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) - 2, Math.round(shoulderY / p) + 4, 4, 4, '#ffffff', null, null, p);
+            }
+
+            // Insignia de Luna Creciente Blanca y faldas largas del abrigo negro de Iori Yagami
+            if (charId === 'iori') {
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) - 2, Math.round(shoulderY / p) + 3, 4, 4, '#ffffff', null, null, p);
+                PixelArtRenderer.drawPixelLimb(ctx, torsoLeanX - 6, pelvisY, torsoLeanX - 22, pelvisY + 44 + waveY, 11, '#111827', '#090a14', cOutline, p);
+            }
+
+            // Calabaza tradicional de sake colgada en la espalda de Chin Gentsai
+            if (charId === 'chin' || vis.accessory === 'sake_gourd') {
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) - 10, Math.round(shoulderY / p) + 4, 7, 10, '#92400e', '#78350f', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) - 9, Math.round(shoulderY / p) + 1, 5, 4, '#b45309', null, cOutline, p);
+            }
+
+            // Hombreras de águila imperial dorada con galones para el Jefe Final Omega Rugal
+            if (isRugal) {
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) - Math.floor(chestW * 0.5) - 3, Math.round(shoulderY / p) - 2, 6, 4, '#ffea00', '#ffffff', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(torsoLeanX / p) + Math.floor(chestW * 0.5) - 3, Math.round(shoulderY / p) - 2, 6, 4, '#ffea00', '#ffffff', cOutline, p);
+            }
+
+            // Cadena de hierro gruesa cruzando el pecho de Chang Koehan
+            if (charId === 'chang' || isGiant) {
+                PixelArtRenderer.drawPixelLimb(ctx, (chestGridX - 6) * p, (chestGridY + 1) * p, (chestGridX + 6) * p, (waistGridY + 4) * p, 6, '#94a3b8', '#334155', cOutline, p);
             }
         }
 
@@ -748,31 +1020,91 @@ class PixelArtRenderer {
         PixelArtRenderer.drawPixelBox(ctx, chestGridX - 2, Math.round(neckY / p), 4, 3, cSkin, cSkinShade, cOutline, p);
         PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY + 2, 7, 6, cSkin, cSkinShade, cOutline, p);
 
-        if (!isSilhouette && hairStyle === 'bald_beard') {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY + 6, 8, 7, cHair, null, cOutline, p);
-        }
-
         if (hairStyle === 'tall_pillar') {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY - 7, 7, 9, cHair, '#eab308', cOutline, p);
-        } else if (hairStyle === 'cap_ponytail') {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 1, 8, 3, cPrimary, null, cOutline, p);
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 1, headGridY - 1, 3, 2, '#ffffff', null, null, p);
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 3, headGridY + 1, 5, 1, cPrimary, null, cOutline, p);
-        } else if (hairStyle === 'fedora_claws') {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 8, 3, '#78350f', null, cOutline, p);
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 6, headGridY + 1, 12, 1, '#78350f', null, cOutline, p);
-        } else if (hairStyle === 'bald_headband' || hairStyle === 'bald_beard' || hairStyle === 'sunglasses_bald') {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY, 7, 2, cSkin, cSkinShade, cOutline, p);
-            if (hairStyle === 'bald_headband') {
-                PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 2, 8, 1, cSecondary, null, null, p);
+            // Benimaru: Torre vertical alta de cabello rubio con chispas electrostáticas
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY - 11, 7, 13, cHair, '#fef08a', cOutline, p);
+            if (!isSilhouette && f % 6 < 3) {
+                PixelArtRenderer.drawPixelBox(ctx, chestGridX - 5, headGridY - 8, 2, 2, '#00f5ff', '#ffffff', null, p);
+                PixelArtRenderer.drawPixelBox(ctx, chestGridX + 4, headGridY - 4, 2, 2, '#00f5ff', '#ffffff', null, p);
             }
+        } else if (hairStyle === 'cap_ponytail') {
+            // Terry Bogard / Clark: Gorra con placa blanca frontal, visera y coleta trasera
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 9, 4, cPrimary, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX, headGridY - 2, 4, 2, '#ffffff', null, null, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 3, headGridY + 1, 5, 1, '#1e3a8a', null, cOutline, p);
+            PixelArtRenderer.drawPixelLimb(ctx, (chestGridX - 4) * p, (headGridY + 1) * p, (chestGridX - 9) * p, (headGridY + 6) * p, 5, cHair, null, cOutline, p);
+        } else if (hairStyle === 'fedora_claws') {
+            // Choi Bounge: Sombrero fedora marrón con ala ancha que proyecta sombra
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 3, 8, 4, '#78350f', '#451a03', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 6, headGridY + 1, 13, 2, '#78350f', '#451a03', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY + 2, 7, 2, '#1c1917', null, null, p);
+        } else if (hairStyle === 'bald_beard') {
+            // Chang Koehan: Cúpula calva y densa barba negra que baja hasta el pecho
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 1, 9, 3, cSkin, cSkinShade, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 5, 9, 8, cHair, '#090a14', cOutline, p);
+        } else if (hairStyle === 'elder_beard') {
+            // Chin Gentsai: Calvo con cejas y barba blanca larga de anciano sabio
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY - 1, 7, 3, cSkin, cSkinShade, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 1, 2, 4, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY + 5, 8, 7, cHair, '#cbd5e1', cOutline, p);
         } else if (hairStyle === 'bangs_over_eye') {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 1, 9, 4, cHair, null, cOutline, p);
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 1, headGridY + 2, 4, 4, cHair, null, null, p);
+            // Iori Yagami / Shermie: Flequillo largo carmesí cayendo sobre el ojo derecho
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 9, 4, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 1, headGridY + 1, 4, 6, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 1, 2, 5, cHair, null, cOutline, p);
+        } else if (hairStyle === 'slick_blonde') {
+            // Geese Howard / Krauser: Cabello rubio engominado hacia atrás
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 9, 4, cHair, '#fef08a', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 6, headGridY - 1, 3, 3, cHair, null, cOutline, p);
+        } else if (hairStyle === 'short_bob') {
+            // Vanessa / Angel / May Lee / Blue Mary / Chris: Corte bob moderno
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 9, 4, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 2, 2, 4, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 2, headGridY + 2, 2, 3, cHair, null, cOutline, p);
+        } else if (hairStyle === 'spiky_white') {
+            // K' (K-Dash): Picos plateados de anime y gafas de sol oscuras
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 5, headGridY - 3, 10, 4, cHair, '#e2e8f0', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 5, 2, 2, cHair, null, null, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX, headGridY - 5, 3, 2, cHair, null, null, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 3, headGridY - 4, 2, 2, cHair, null, null, p);
+        } else if (hairStyle === 'cyborg_pompadour') {
+            // Maxima: Pompadour oscuro con placa metálica cibernética en la sien
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 3, 9, 5, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 2, 2, 3, '#94a3b8', '#ffffff', cOutline, p);
+        } else if (hairStyle === 'mohawk_agent') {
+            // Seth: Cresta mohawk rubia sobre cabeza afeitada
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY, 7, 2, cSkin, cSkinShade, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 1, headGridY - 5, 3, 7, cHair, '#fef08a', cOutline, p);
+        } else if (hairStyle === 'boss_rugal') {
+            // Omega Rugal: Cabello plateado peinado con patillas aristocráticas
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 9, 4, cHair, '#f8fafc', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 6, headGridY - 1, 3, 3, cHair, null, cOutline, p);
+        } else if (hairStyle === 'tori_mask') {
+            // Takuma: Máscara Tengu roja con gran pico y bigote blanco
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY + 1, 7, 6, '#dc2626', '#991b1b', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX + 3, headGridY + 3, 4, 2, '#dc2626', '#ffffff', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 2, headGridY + 6, 6, 2, '#ffffff', null, null, p);
+        } else if (hairStyle === 'blue_spiky_cape') {
+            // K9999: Picos anime azules desordenados
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 3, 9, 5, cHair, '#60a5fa', cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 2, headGridY - 5, 4, 2, cHair, null, null, p);
+        } else if (hairStyle === 'sunglasses_bald') {
+            // Mr. Big / Agentes: Calvo con gafas oscuras rectangulares
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY, 7, 2, cSkin, cSkinShade, cOutline, p);
+        } else if (hairStyle === 'bald_headband') {
+            // Goro Daimon: Calvo con cinta blanca de combate
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 3, headGridY, 7, 2, cSkin, cSkinShade, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 2, 9, 1, cSecondary, null, null, p);
+        } else if (hairStyle === 'spiky_bandana') {
+            // Joe Higashi / Ralf: Picos con cinta frontal y nudo
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 3, 9, 4, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 1, 9, 2, cSecondary, null, cOutline, p);
         } else {
-            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 1, 9, 4, cHair, null, cOutline, p);
-            if (hairStyle === 'spiky_headband' || hairStyle === 'spiky_bandana') {
-                PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 2, 8, 1, cSecondary, null, null, p);
+            // Clásico dinámico (Kyo, Ryo, Andy, Robert, Kim, Yashiro, etc.) con flequillo marcial natural
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY - 2, 9, 4, cHair, null, cOutline, p);
+            PixelArtRenderer.drawPixelBox(ctx, chestGridX, headGridY + 2, 3, 2, cHair, null, null, p);
+            if (hairStyle === 'spiky_headband') {
+                PixelArtRenderer.drawPixelBox(ctx, chestGridX - 4, headGridY + 1, 8, 1, cSecondary, null, null, p);
             }
         }
 
@@ -846,16 +1178,22 @@ class PixelArtRenderer {
             const gloveCol = (isHeavyPunch || isComboInfused) ? cEnergy : cSecondary;
             PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) - 2, Math.round(targetHandY / p) - 3, isHeavyPunch ? 7 : 6, isHeavyPunch ? 7 : 6, gloveCol, '#ffffff', cOutline, p);
 
-            // Armas y efectos propios del personaje en ataque (Garras Choi, Bola Chang, Abanico Mai, Látigo Whip, Cuchilla Leona)
-            if (!isSilhouette && isShort) {
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) - 2, 8, 1, '#e2e8f0', null, null, p);
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p), 8, 1, '#e2e8f0', null, null, p);
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p) + 2, 8, 1, '#e2e8f0', null, null, p);
+            // Armas y efectos propios del personaje en ataque (Garras Choi, Bola Chang, Abanico Mai, Látigo Whip, Brazo K9999)
+            if (!isSilhouette && charId === 'k9999' && (isHeavyPunch || atkPhase === 'ACTIVE')) {
+                // Brazo biomecánico gigante mutante de carne y cables de K9999
+                PixelArtRenderer.drawPixelLimb(ctx, frontShoulderX, frontShoulderY, targetHandX, targetHandY, 22, '#ef4444', '#7f1d1d', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p), Math.round(targetHandY / p) - 8, 14, 16, '#dc2626', '#991b1b', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 6, Math.round(targetHandY / p) - 6, 8, 12, '#3b82f6', '#1d4ed8', null, p);
+            } else if (!isSilhouette && (isShort || charId === 'choi')) {
+                // Garras triples de acero de Choi Bounge
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 3, Math.round(targetHandY / p) - 4, 9, 2, '#f8fafc', '#94a3b8', null, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 4, Math.round(targetHandY / p), 11, 2, '#f8fafc', '#94a3b8', null, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 3, Math.round(targetHandY / p) + 4, 9, 2, '#f8fafc', '#94a3b8', null, p);
             } else if (!isSilhouette && isGiant) {
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 2, Math.round(targetHandY / p) - 6, 12, 12, '#475569', '#1e293b', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 2, Math.round(targetHandY / p) - 6, 14, 14, '#475569', '#1e293b', cOutline, p);
             } else if (!isSilhouette && charId === 'mai') {
                 // Abanico Kachosen desplegado de Mai Shiranui
-                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 3, Math.round(targetHandY / p) - 5, 6, 9, '#dc2626', '#ffffff', cOutline, p);
+                PixelArtRenderer.drawPixelBox(ctx, Math.round(targetHandX / p) + 3, Math.round(targetHandY / p) - 6, 7, 11, '#dc2626', '#ffffff', cOutline, p);
             } else if (!isSilhouette && charId === 'whip') {
                 // Látigo extendido de Whip
                 PixelArtRenderer.drawSlashArc(ctx, targetHandX, targetHandY, targetHandX + 44, targetHandY - 10, '#a855f7', '#1e1b4b', p, 18, 0.8);
