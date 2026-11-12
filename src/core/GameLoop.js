@@ -13,7 +13,10 @@ const GamePhase = {
     ROUND_INTRO: 'ROUND_INTRO',
     FIGHTING: 'FIGHTING',
     KO_TRANSITION: 'KO_TRANSITION',
-    MATCH_OVER: 'MATCH_OVER'
+    MATCH_OVER: 'MATCH_OVER',
+    CONTROLS_CONFIG: 'CONTROLS_CONFIG',
+    TEAM_ENDING: 'TEAM_ENDING',
+    CREDITS: 'CREDITS'
 };
 
 class GameLoop {
@@ -47,7 +50,7 @@ class GameLoop {
 
         // Estado de flujo Arcade: Inicia en la Pantalla de Título (TITLE_SCREEN)
         this.phase = GamePhase.TITLE_SCREEN;
-        this.gameMode = 'ARCADE_12'; // 'ARCADE_12' | 'FREE_3V3' | 'VERSUS_2P' | 'BOSS_RUGAL'
+        this.gameMode = 'ARCADE_12'; // 'ARCADE_12' | 'FREE_3V3' | 'VERSUS_2P' | 'BOSS_RUGAL' | 'PRACTICE'
         this.modeCursor = 0;
         this.currentStageNumber = 1; // Nivel actual del 1 al 12 (Nivel 12 = Omega Rugal)
 
@@ -58,6 +61,13 @@ class GameLoop {
         this.selectCursorP2 = 3;
         this.isPaused = false;
         this.pauseCursor = 0;
+
+        // Configuración interactiva de controles y créditos finales
+        this.controlsPIndex = 1;
+        this.controlsCursor = 0;
+        this.waitingForKey = false;
+        this.creditsScroll = 0;
+        this._practiceComboResetTimer = 0;
 
         // Estado del combate 3 vs 3
         this.team1Index = 0;
@@ -232,13 +242,14 @@ class GameLoop {
         this.projectiles = [];
         this.sparks = [];
 
+        const isPractice = this.gameMode === 'PRACTICE';
         this.fighter1 = new window.Fighter({
             playerIndex: 1,
             template: this.team1[0],
             x: this.width * 0.28,
             groundY: this.groundY,
             facing: 1,
-            initialPower: 1000
+            initialPower: isPractice ? 3000 : 1000
         });
 
         this.fighter2 = new window.Fighter({
@@ -247,15 +258,17 @@ class GameLoop {
             x: this.width * 0.72,
             groundY: this.groundY,
             facing: -1,
-            initialPower: this.currentStageNumber === 12 ? 3000 : 1000
+            initialPower: (isPractice || this.currentStageNumber === 12) ? 3000 : 1000
         });
 
         // Música especial para el Nivel 12 (Omega Rugal) o música de pelea estándar
         window.AudioSynth.playBGM(this.currentStageNumber === 12 ? 'boss_rugal' : 'stage');
 
-        const stagePrefix = (this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL')
-            ? `NIVEL ${this.currentStageNumber}/12`
-            : `ASALTO ${this.roundNumber}`;
+        const stagePrefix = isPractice
+            ? 'MODO ENTRENAMIENTO'
+            : ((this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL')
+                ? `NIVEL ${this.currentStageNumber}/12`
+                : `ASALTO ${this.roundNumber}`);
 
         this._beginRoundIntro(stagePrefix, `${this.fighter1.name} VS ${this.fighter2.name}`);
     }
@@ -263,29 +276,73 @@ class GameLoop {
     _beginRoundIntro(title, subtitle) {
         this.phase = GamePhase.ROUND_INTRO;
         this.phaseTimer = 95;
-        this.timerSeconds = 60;
+        this.timerSeconds = this.gameMode === 'PRACTICE' ? 999 : 60;
         this.projectiles = [];
         this.announcement = {
             text: title,
             subtext: subtitle,
-            color: this.currentStageNumber === 12 ? '#ff0044' : '#ffbe0b'
+            color: this.gameMode === 'PRACTICE' ? '#a855f7' : (this.currentStageNumber === 12 ? '#ff0044' : '#ffbe0b')
         };
     }
 
     _executePauseOption(idx) {
         window.AudioSynth.play('select');
         this.isPaused = false;
-        if (idx === 0) {
-            return;
-        }
-        if (idx === 1) {
-            this.openTeamSelect();
-        } else if (idx === 2) {
-            this.openModeSelect();
-        } else if (idx === 3) {
-            this.startMatch3v3();
-        } else if (idx === 4) {
-            this.openTitleScreen();
+        const isPractice = this.gameMode === 'PRACTICE';
+
+        if (isPractice) {
+            if (idx === 0) return;
+            if (idx === 1) {
+                // Rotar modo del maniquí
+                this.aiController.cycleDummyMode();
+                window.AudioSynth.play('menu_confirm');
+                this.isPaused = true;
+                return;
+            }
+            if (idx === 2) {
+                this.phase = GamePhase.CONTROLS_CONFIG;
+                this.controlsPIndex = 1;
+                this.controlsCursor = 0;
+                this.waitingForKey = false;
+                return;
+            }
+            if (idx === 3) {
+                this.openTeamSelect();
+                return;
+            }
+            if (idx === 4) {
+                this.openModeSelect();
+                return;
+            }
+            if (idx === 5) {
+                this.openTitleScreen();
+                return;
+            }
+        } else {
+            if (idx === 0) return;
+            if (idx === 1) {
+                this.phase = GamePhase.CONTROLS_CONFIG;
+                this.controlsPIndex = 1;
+                this.controlsCursor = 0;
+                this.waitingForKey = false;
+                return;
+            }
+            if (idx === 2) {
+                this.openTeamSelect();
+                return;
+            }
+            if (idx === 3) {
+                this.openModeSelect();
+                return;
+            }
+            if (idx === 4) {
+                this.startMatch3v3();
+                return;
+            }
+            if (idx === 5) {
+                this.openTitleScreen();
+                return;
+            }
         }
     }
 
@@ -294,11 +351,11 @@ class GameLoop {
         p2Input.updateFrame(this.globalFrame, 1, false);
 
         if (p1Input.pressed.up || p2Input.pressed.up) {
-            this.pauseCursor = (this.pauseCursor - 1 + 5) % 5;
+            this.pauseCursor = (this.pauseCursor - 1 + 6) % 6;
             window.AudioSynth.play('select');
         }
         if (p1Input.pressed.down || p2Input.pressed.down) {
-            this.pauseCursor = (this.pauseCursor + 1) % 5;
+            this.pauseCursor = (this.pauseCursor + 1) % 6;
             window.AudioSynth.play('select');
         }
         if (p1Input.pressed.HK || p2Input.pressed.HK) {
@@ -364,6 +421,21 @@ class GameLoop {
 
         if (this.phase === GamePhase.MODE_SELECT) {
             this._updateModeSelect();
+            return;
+        }
+
+        if (this.phase === GamePhase.CONTROLS_CONFIG) {
+            this._updateControlsConfig(p1Input, p2Input);
+            return;
+        }
+
+        if (this.phase === GamePhase.TEAM_ENDING) {
+            this._updateTeamEnding(p1Input, p2Input);
+            return;
+        }
+
+        if (this.phase === GamePhase.CREDITS) {
+            this._updateCredits(p1Input, p2Input);
             return;
         }
 
@@ -488,8 +560,10 @@ class GameLoop {
             if (p1Input.pressed.LP || p1Input.pressed.HP || p2Input.pressed.LP || p2Input.pressed.HP || p1Input.startPressed || p2Input.startPressed) {
                 if (this.networkManager && this.networkManager.isOnline) {
                     this.networkManager.sendMatchStart();
-                } else if (this.gameMode === 'ARCADE_12' && this.currentStageNumber >= 12 && this.team2Index >= 3) {
-                    this.openTitleScreen();
+                } else if ((this.gameMode === 'ARCADE_12' || this.gameMode === 'BOSS_RUGAL') && this.currentStageNumber >= 12 && this.team2Index >= 3) {
+                    this.phase = GamePhase.TEAM_ENDING;
+                    this.phaseTimer = 0;
+                    window.AudioSynth.playBGM('victory');
                 } else {
                     this.startArcadeStage(this.currentStageNumber);
                 }
@@ -501,8 +575,57 @@ class GameLoop {
      * Lógica de un frame de combate activo.
      */
     _updateFightingPhase(p1Input, p2Input) {
-        // Reloj regresivo (1 segundo cada 60 frames)
-        this.timerSeconds = Math.max(0, this.timerSeconds - 1 / 60);
+        if (this.gameMode === 'PRACTICE') {
+            this.timerSeconds = 999;
+            this.fighter1.powerGauge = 3000;
+            this.fighter2.powerGauge = 3000;
+
+            // Reiniciar combate y posiciones al pulsar SELECT
+            if (p1Input.selectPressed || p2Input.selectPressed) {
+                this.fighter1.x = this.width * 0.28;
+                this.fighter1.y = this.groundY;
+                this.fighter1.vx = 0;
+                this.fighter1.vy = 0;
+                this.fighter1.facing = 1;
+                this.fighter1.setState(window.FighterState.IDLE);
+                this.fighter1.hp = this.fighter1.maxHp;
+
+                this.fighter2.x = this.width * 0.72;
+                this.fighter2.y = this.groundY;
+                this.fighter2.vx = 0;
+                this.fighter2.vy = 0;
+                this.fighter2.facing = -1;
+                this.fighter2.setState(window.FighterState.IDLE);
+                this.fighter2.hp = this.fighter2.maxHp;
+                this.fighter2.comboHitsTaken = 0;
+                this.fighter2.damageTakenInCombo = 0;
+                this.projectiles = [];
+                window.AudioSynth.play('parry');
+            }
+
+            // Recuperación de vida del maniquí cuando termina el combo
+            if (this.fighter2.stunTimer === 0 && this.fighter2.comboHitsTaken > 0) {
+                this._practiceComboResetTimer++;
+                if (this._practiceComboResetTimer > 45) {
+                    this.fighter2.hp = this.fighter2.maxHp;
+                    this.fighter2.comboHitsTaken = 0;
+                    this.fighter2.damageTakenInCombo = 0;
+                    this._practiceComboResetTimer = 0;
+                }
+            } else {
+                this._practiceComboResetTimer = 0;
+            }
+
+            if (this.fighter2.hp <= 0) {
+                this.fighter2.hp = this.fighter2.maxHp;
+            }
+            if (this.fighter1.hp <= 0) {
+                this.fighter1.hp = this.fighter1.maxHp;
+            }
+        } else {
+            // Reloj regresivo (1 segundo cada 60 frames)
+            this.timerSeconds = Math.max(0, this.timerSeconds - 1 / 60);
+        }
 
         const callbacks = {
             spawnProjectile: (projOpts) => {
@@ -537,8 +660,8 @@ class GameLoop {
         this._checkMeleeHit(this.fighter1, this.fighter2, p2Input);
         this._checkMeleeHit(this.fighter2, this.fighter1, p1Input);
 
-        // Verificar condición de K.O. o Time Over
-        if (this.fighter1.hp <= 0 || this.fighter2.hp <= 0 || this.timerSeconds <= 0) {
+        // Verificar condición de K.O. o Time Over (en práctica no termina la partida)
+        if (this.gameMode !== 'PRACTICE' && (this.fighter1.hp <= 0 || this.fighter2.hp <= 0 || this.timerSeconds <= 0)) {
             this._triggerKOTransition();
         }
     }
@@ -889,11 +1012,11 @@ class GameLoop {
         }
 
         if (p1.pressed.up || p2.pressed.up) {
-            this.modeCursor = (this.modeCursor - 1 + 4) % 4;
+            this.modeCursor = (this.modeCursor - 1 + 6) % 6;
             window.AudioSynth.play('select');
         }
         if (p1.pressed.down || p2.pressed.down) {
-            this.modeCursor = (this.modeCursor + 1) % 4;
+            this.modeCursor = (this.modeCursor + 1) % 6;
             window.AudioSynth.play('select');
         }
 
@@ -914,21 +1037,142 @@ class GameLoop {
             this.gameMode = 'ARCADE_12';
             this.currentStageNumber = 1;
             this.aiController.enabled = true;
+            this.aiController.dummyMode = null;
+            window.AudioSynth.play('super');
+            this.openTeamSelect();
         } else if (modeIdx === 1) {
             this.gameMode = 'FREE_3V3';
             this.currentStageNumber = 1;
             this.aiController.enabled = true;
+            this.aiController.dummyMode = null;
+            window.AudioSynth.play('super');
+            this.openTeamSelect();
         } else if (modeIdx === 2) {
             this.gameMode = 'VERSUS_2P';
             this.currentStageNumber = 1;
             this.aiController.enabled = false;
-        } else {
+            this.aiController.dummyMode = null;
+            window.AudioSynth.play('super');
+            this.openTeamSelect();
+        } else if (modeIdx === 3) {
             this.gameMode = 'BOSS_RUGAL';
             this.currentStageNumber = 12;
             this.aiController.enabled = true;
+            this.aiController.dummyMode = null;
+            window.AudioSynth.play('super');
+            this.openTeamSelect();
+        } else if (modeIdx === 4) {
+            this.gameMode = 'PRACTICE';
+            this.currentStageNumber = 1;
+            this.aiController.enabled = true;
+            this.aiController.dummyMode = window.DummyMode ? window.DummyMode.QUIETO : 'QUIETO';
+            window.AudioSynth.play('super');
+            this.openTeamSelect();
+        } else if (modeIdx === 5) {
+            this.phase = GamePhase.CONTROLS_CONFIG;
+            this.controlsPIndex = 1;
+            this.controlsCursor = 0;
+            this.waitingForKey = false;
+            window.AudioSynth.play('super');
         }
-        window.AudioSynth.play('super');
-        this.openTeamSelect();
+    }
+
+    /**
+     * Lógica de navegación y reasignación en la pantalla de Configuración de Controles.
+     */
+    _updateControlsConfig(p1Input, p2Input) {
+        p1Input.updateFrame(this.globalFrame, 1, false);
+        p2Input.updateFrame(this.globalFrame, 1, false);
+
+        if (this.waitingForKey) {
+            if (this.inputHandler.rebindTarget === null) {
+                this.waitingForKey = false;
+            }
+            return;
+        }
+
+        const actionKeys = ['up', 'down', 'left', 'right', 'lp', 'hp', 'lk', 'hk', 'roll', 'max'];
+
+        if (p1Input.pressed.up || p2Input.pressed.up) {
+            this.controlsCursor = (this.controlsCursor - 1 + 12) % 12;
+            window.AudioSynth.play('menu_move');
+        }
+        if (p1Input.pressed.down || p2Input.pressed.down) {
+            this.controlsCursor = (this.controlsCursor + 1) % 12;
+            window.AudioSynth.play('menu_move');
+        }
+        if (p1Input.pressed.left || p1Input.pressed.right || p2Input.pressed.left || p2Input.pressed.right) {
+            this.controlsPIndex = this.controlsPIndex === 1 ? 2 : 1;
+            window.AudioSynth.play('menu_move');
+        }
+
+        if (p1Input.pressed.HK || p2Input.pressed.HK) {
+            this.phase = GamePhase.MODE_SELECT;
+            window.AudioSynth.play('menu_back');
+            return;
+        }
+
+        if (
+            p1Input.pressed.LP ||
+            p1Input.pressed.LK ||
+            p1Input.pressed.HP ||
+            p2Input.pressed.LP ||
+            p1Input.startPressed ||
+            p2Input.startPressed
+        ) {
+            if (this.controlsCursor < 10) {
+                const action = actionKeys[this.controlsCursor];
+                const normAction = action === 'roll' ? 'EVADE' : (action === 'max' ? 'MAX' : action.toUpperCase());
+                this.waitingForKey = true;
+                this.inputHandler.rebindTarget = { playerIndex: this.controlsPIndex, action: normAction };
+                window.AudioSynth.play('menu_confirm');
+            } else if (this.controlsCursor === 10) {
+                this.inputHandler.resetDefaults();
+                window.AudioSynth.play('menu_confirm');
+            } else if (this.controlsCursor === 11) {
+                this.phase = GamePhase.MODE_SELECT;
+                window.AudioSynth.play('menu_confirm');
+            }
+        }
+    }
+
+    /**
+     * Lógica de la pantalla de Ending y victoria de equipo.
+     */
+    _updateTeamEnding(p1Input, p2Input) {
+        this.phaseTimer++;
+        p1Input.updateFrame(this.globalFrame, 1, false);
+        p2Input.updateFrame(this.globalFrame, 1, false);
+
+        if (
+            this.phaseTimer > 45 &&
+            (p1Input.pressed.LP ||
+             p1Input.pressed.LK ||
+             p1Input.pressed.HP ||
+             p1Input.pressed.HK ||
+             p1Input.startPressed ||
+             p2Input.startPressed)
+        ) {
+            this.phase = GamePhase.CREDITS;
+            this.creditsScroll = 0;
+            window.AudioSynth.play('menu_confirm');
+        }
+    }
+
+    /**
+     * Lógica del desplazamiento de Créditos Finales.
+     */
+    _updateCredits(p1Input, p2Input) {
+        this.creditsScroll += 1.0;
+        p1Input.updateFrame(this.globalFrame, 1, false);
+        p2Input.updateFrame(this.globalFrame, 1, false);
+
+        if (
+            this.creditsScroll > 960 ||
+            (this.creditsScroll > 60 && (p1Input.startPressed || p2Input.startPressed || p1Input.pressed.HK || p1Input.pressed.LP))
+        ) {
+            this.openTitleScreen();
+        }
     }
 
     /**
@@ -1248,11 +1492,11 @@ class GameLoop {
                 const cx = this.width * 0.5;
                 const modalH = 340;
                 const modalTop = Math.floor((this.height - modalH) * 0.5);
-                const btnW = 472;
-                const btnH = 40;
-                const startY = modalTop + 82;
-                const gap = 10;
-                for (let i = 0; i < 5; i++) {
+                const btnW = 512;
+                const btnH = 36;
+                const startY = modalTop + 76;
+                const gap = 8;
+                for (let i = 0; i < 6; i++) {
                     const bx = cx - btnW * 0.5;
                     const by = startY + i * (btnH + gap);
                     if (mx >= bx && mx <= bx + btnW && my >= by && my <= by + btnH) {
@@ -1278,10 +1522,10 @@ class GameLoop {
 
                 const cx = this.width * 0.5;
                 const boxW = 720;
-                const boxH = 74;
-                const startY = 122;
-                const gap = 18;
-                for (let i = 0; i < 4; i++) {
+                const boxH = 54;
+                const startY = 106;
+                const gap = 10;
+                for (let i = 0; i < 6; i++) {
                     const bx = cx - boxW * 0.5;
                     const by = startY + i * (boxH + gap);
                     if (mx >= bx && mx <= bx + boxW && my >= by && my <= by + boxH) {
@@ -1435,6 +1679,21 @@ class GameLoop {
             return;
         }
 
+        if (this.phase === GamePhase.CONTROLS_CONFIG) {
+            this.hud.drawControlsConfigScreen(ctx, this.inputHandler, this.controlsPIndex, this.controlsCursor, this.waitingForKey);
+            return;
+        }
+
+        if (this.phase === GamePhase.TEAM_ENDING) {
+            this.hud.drawTeamEndingScreen(ctx, this.team1, this.globalFrame);
+            return;
+        }
+
+        if (this.phase === GamePhase.CREDITS) {
+            this.hud.drawCreditsScreen(ctx, this.globalFrame, this.creditsScroll);
+            return;
+        }
+
         if (this.phase === GamePhase.TEAM_SELECT) {
             const isOnline = Boolean(this.networkManager && this.networkManager.isOnline);
             const activePreviewIdx = (isOnline && this.networkManager.role === 'GUEST')
@@ -1531,174 +1790,33 @@ class GameLoop {
             });
         }
 
-        // 7. Menú de Pausa y Navegación superpuesto si está activo
+        // 7. Capa interactiva de datos y visualizador de inputs en Modo Práctica
+        if (this.phase === GamePhase.FIGHTING && this.gameMode === 'PRACTICE') {
+            this.hud.drawPracticeOverlay(
+                ctx,
+                this.inputHandler.getPlayer(1),
+                this.inputHandler.getPlayer(2),
+                this.fighter1,
+                this.fighter2,
+                this.aiController.dummyMode || 'QUIETO'
+            );
+        }
+
+        // 8. Menú de Pausa y Navegación superpuesto si está activo
         if (this.isPaused) {
-            this.hud.drawPauseMenuOverlay(ctx, this.pauseCursor);
+            this.hud.drawPauseMenuOverlay(ctx, this.pauseCursor, this.gameMode, this.aiController.dummyMode || 'QUIETO');
         }
     }
 
     /**
-     * Renderiza el escenario Pixel-Art de "THE KING OF AZTLAN" inspirado en la estética Neo-Geo:
-     * Cielo nocturno azulado (o carmesí oscuro en el Nivel 12 de Omega Rugal), torre iluminada,
-     * banderines ceremoniales diagonales, barandal encendido con espectadores animados y piso de jade húmedo.
+     * Renderiza el escenario Pixel-Art activo según el nivel del torneo (1 al 12)
+     * mediante el gestor modular de escenarios StageRenderer.
      */
     _drawAztlanStage(ctx) {
-        window.PixelArtRendererClass.enforcePixelCrispness(ctx);
-        const p = 4; // Tamaño de bloque pixel-art (4x4 px)
-        const horizonY = this.groundY - 120;
-        const isBossStage = this.currentStageNumber === 12;
-
-        // 1. Cielo nocturno en bandas de píxeles (Carmesí Imperial en el Nivel 12 de Omega Rugal)
-        const skyBands = isBossStage
-            ? ['#240610', '#380a18', '#4d0f22', '#64142c', '#7a1b38', '#4d0f22']
-            : ['#242854', '#2e3468', '#3a427c', '#485294', '#5862a8', '#444c88'];
-        const bandH = Math.ceil(horizonY / skyBands.length / p) * p;
-        for (let i = 0; i < skyBands.length; i++) {
-            ctx.fillStyle = skyBands[i];
-            ctx.fillRect(0, i * bandH, this.width, bandH);
+        if (window.StageRenderer) {
+            window.StageRenderer.drawStage(ctx, this.currentStageNumber, this.globalFrame, this.width, this.height, this.groundY);
+            return;
         }
-
-        // Nubes pixeladas horizontales
-        ctx.fillStyle = '#6874b8';
-        ctx.fillRect(140, 96, 220, 12);
-        ctx.fillRect(172, 88, 148, 8);
-        ctx.fillRect(520, 116, 260, 12);
-        ctx.fillRect(560, 108, 180, 8);
-
-        // 2. Gran Torre de Aztlán a la izquierda con ventanas verde esmeralda encendidas (como el rascacielos de la referencia)
-        const towerX = 28;
-        const towerY = 12;
-        const towerW = 112;
-        const towerH = horizonY - towerY;
-        ctx.fillStyle = '#182438';
-        ctx.fillRect(towerX, towerY, towerW, towerH);
-        ctx.fillStyle = '#243850';
-        ctx.fillRect(towerX + 4, towerY, 12, towerH);
-
-        // Ventanas pixeladas iluminadas de la torre
-        for (let wy = towerY + 12; wy < horizonY - 16; wy += 12) {
-            for (let wx = towerX + 12; wx < towerX + towerW - 12; wx += 16) {
-                if ((wx + wy) % 24 !== 0) {
-                    ctx.fillStyle = (wx * wy) % 7 === 0 ? '#9efcd0' : '#38b080';
-                    ctx.fillRect(wx, wy, 8, 4);
-                }
-            }
-        }
-
-        // 3. Templos y edificios escalonados en el horizonte
-        const buildings = [
-            { x: 380, w: 76, h: 112, c: '#383852' },
-            { x: 464, w: 92, h: 124, c: '#444460' },
-            { x: 564, w: 84, h: 104, c: '#34344c' },
-            { x: 656, w: 108, h: 120, c: '#444460' },
-            { x: 772, w: 128, h: 108, c: '#383852' }
-        ];
-        for (const b of buildings) {
-            const by = horizonY - b.h;
-            ctx.fillStyle = b.c;
-            ctx.fillRect(b.x, by, b.w, b.h);
-            ctx.fillStyle = '#242438';
-            ctx.fillRect(b.x + b.w - 12, by, 12, b.h);
-            // Ventanas ámbar
-            for (let wy = by + 12; wy < horizonY - 20; wy += 16) {
-                for (let wx = b.x + 8; wx < b.x + b.w - 16; wx += 16) {
-                    ctx.fillStyle = (wx + wy) % 32 === 0 ? '#ffbe0b' : '#202030';
-                    ctx.fillRect(wx, wy, 8, 4);
-                }
-            }
-        }
-
-        // Puente iluminado al fondo con farolas naranjas
-        ctx.fillStyle = '#28243c';
-        ctx.fillRect(0, horizonY - 28, this.width, 28);
-        for (let lx = 24; lx < this.width; lx += 64) {
-            ctx.fillStyle = '#ff9e00';
-            ctx.fillRect(lx, horizonY - 36, 8, 8);
-            ctx.fillStyle = '#ffea00';
-            ctx.fillRect(lx + 2, horizonY - 34, 4, 4);
-        }
-
-        // 4. Cuerdas diagonales con banderines ceremoniales ondeando en el cielo
-        const flagColors = ['#ffbe0b', '#00d68f', '#ffffff', '#ff3366', '#38b6ff', '#ff7b00'];
-        const wave = Math.floor(this.globalFrame / 10) % 2 === 0 ? 0 : 4;
-        for (let i = 0; i < 6; i++) {
-            const fx1 = 310 + i * 78;
-            const fy1 = 44 + i * 48;
-            ctx.fillStyle = '#181828';
-            ctx.fillRect(fx1 - 12, fy1 - 8, 16, 4);
-            ctx.fillStyle = flagColors[i % flagColors.length];
-            ctx.fillRect(fx1, fy1, 24, 16 + wave);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(fx1 + 8, fy1 + 4, 8, 8);
-
-            const fx2 = 540 + i * 74;
-            const fy2 = 36 + i * 44;
-            ctx.fillStyle = flagColors[(i + 2) % flagColors.length];
-            ctx.fillRect(fx2, fy2, 24, 16 - wave);
-        }
-
-        // 5. Espectadores Pixel-Art animados detrás del barandal (animando la pelea)
-        const railTopY = this.groundY - 96;
-        window.PixelArtRendererClass.drawSpectator(ctx, 224, this.groundY - 12, this.globalFrame, '#181824', '#2b3248', '#d99b66', 0);
-        window.PixelArtRendererClass.drawSpectator(ctx, 326, this.groundY - 8, this.globalFrame, '#162848', '#d99b66', '#c68652', 7);
-        window.PixelArtRendererClass.drawSpectator(ctx, 616, this.groundY - 14, this.globalFrame, '#203864', '#8d99ae', '#c68652', 4);
-        window.PixelArtRendererClass.drawSpectator(ctx, 684, this.groundY - 4, this.globalFrame, '#7f8c8d', '#2b2d42', '#d99b66', 11);
-
-        // 6. Barandal iluminado con luces naranjas/doradas (idéntico al muelle/terraza de la imagen)
-        ctx.fillStyle = '#7c2d12';
-        ctx.fillRect(0, railTopY, this.width, 8);
-        ctx.fillRect(0, this.groundY - 12, this.width, 8);
-        ctx.fillStyle = '#ffbe0b';
-        ctx.fillRect(0, railTopY + 2, this.width, 4);
-
-        for (let rx = 8; rx < this.width; rx += 32) {
-            ctx.fillStyle = '#9a3412';
-            ctx.fillRect(rx, railTopY + 8, 8, 76);
-            ctx.fillStyle = '#ff9e00';
-            ctx.fillRect(rx + 2, railTopY + 12, 4, 68);
-            // Eslabones decorativos entre postes
-            ctx.fillStyle = '#64748b';
-            ctx.fillRect(rx + 12, railTopY + 20, 12, 44);
-            ctx.fillStyle = '#1e2436';
-            ctx.fillRect(rx + 15, railTopY + 26, 6, 32);
-        }
-
-        // 7. Piso de piedra de jade húmedo con reflejos pixelados
-        const floorH = this.height - this.groundY;
-        ctx.fillStyle = '#20545c';
-        ctx.fillRect(0, this.groundY, this.width, floorH);
-
-        // Bandas horizontales de reflejo pixelado en el suelo
-        for (let fy = this.groundY + 4; fy < this.height; fy += 8) {
-            ctx.fillStyle = ((fy - this.groundY) / 8) % 2 === 0 ? '#2c6c74' : '#184048';
-            ctx.fillRect(0, fy, this.width, 4);
-        }
-
-        // Brillos naranjas reflejados del barandal sobre el suelo húmedo
-        for (let rx = 20; rx < this.width; rx += 64) {
-            ctx.fillStyle = 'rgba(255, 180, 0, 0.25)';
-            ctx.fillRect(rx, this.groundY + 4, 24, 8);
-        }
-
-        // 8. Ruedas de piedra / braseros apilados con cuerda en la esquina derecha (como los neumáticos/cuerda de la captura)
-        const propX = this.width - 230;
-        const propY = this.groundY - 56;
-        for (let tier = 0; tier < 3; tier++) {
-            const ty = propY + tier * 20;
-            const tx = propX + (tier % 2 === 0 ? 0 : 8);
-            ctx.fillStyle = '#5c1810';
-            ctx.fillRect(tx, ty, 108, 20);
-            ctx.fillStyle = '#8c2818';
-            ctx.fillRect(tx + 4, ty + 4, 100, 12);
-            ctx.fillStyle = '#b83c20';
-            for (let gx = tx + 10; gx < tx + 98; gx += 12) {
-                ctx.fillRect(gx, ty + 4, 6, 12);
-            }
-        }
-        // Cuerda gris pixelada en el suelo
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(propX - 32, this.groundY + 12, 88, 6);
-        ctx.fillRect(propX + 48, this.groundY + 18, 64, 6);
     }
 
     _drawSparks(ctx) {

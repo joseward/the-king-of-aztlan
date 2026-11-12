@@ -92,6 +92,8 @@ class Fighter {
         this.hitShakeTimer = 0;        // Vibración de impacto estilo Neo-Geo
         this.lastHitTypeReceived = 'HIGH';
         this.invulnerableTimer = 0;    // Frames de invulnerabilidad (Evade, DP, Super, Wakeup)
+        this.hasArmor = false;         // Armadura contra 1 impacto (Carga Insignia)
+        this.isCounterStance = false;  // Postura activa de contragolpe/parada (Atemi Nage)
         this.evadeDir = 1;
 
         // Contador de combos recibidos por este peleador y Medidor de Guardia KOF 2002
@@ -574,6 +576,23 @@ class Fighter {
                 this.vy = move.velocityY;
                 this.y -= 2;
             }
+            // Agarre de Comando Insignia (GRAB): Tiro inbloqueable a corta distancia
+            if (move.archetype === 'GRAB' && opponent && this.isGrounded() && opponent.isGrounded()) {
+                const grabDist = Math.abs(opponent.x - this.x);
+                if (grabDist < 95 && opponent.invulnerableTimer <= 0) {
+                    opponent.stunTimer = 45;
+                    opponent.hp = Math.max(1, opponent.hp - Math.round(move.damage / (opponent.stats?.defense || 1)));
+                    opponent.vx = 7.8 * this.facing;
+                    opponent.vy = -7.8;
+                    opponent.y = Math.min(opponent.y, opponent.groundY - 12);
+                    opponent.setState(FighterState.KNOCKDOWN);
+                    this._pushAfterimage('#ffbe0b');
+                    window.AudioSynth.play('throw');
+                    if (matchCallbacks?.addBannerEffect) {
+                        matchCallbacks.addBannerEffect(this.playerIndex, '¡AGARRE INSIGNIA KOF!', '#ffea00');
+                    }
+                }
+            }
             // Si es un proyectil de 1 impacto (ej. 236+P), lanzarlo al inicio de la fase activa
             if (move.spawnsProjectile && (move.hits || 1) <= 1 && !this.hasSpawnedProjectile && matchCallbacks?.spawnProjectile) {
                 this.hasSpawnedProjectile = true;
@@ -585,6 +604,27 @@ class Fighter {
                     ...move.spawnsProjectile
                 });
             }
+        }
+
+        // Teletransportación / Desplazamiento Fantasma Insignia
+        if (move.archetype === 'TELEPORT' && this.stateFrame === 4) {
+            const targetX = opponent ? opponent.x + (this.facing > 0 ? 115 : -115) : this.x + 220 * this.facing;
+            this.x = Math.max(70, Math.min(890, targetX));
+            if (opponent) {
+                this.facing = this.x < opponent.x ? 1 : -1;
+            }
+            this._pushAfterimage(this.visuals.energyColor);
+            window.AudioSynth.play('teleport');
+        }
+
+        // Buceo Aéreo Insignia (DIVE): al tocar el suelo cancela el vuelo y pasa a neutro
+        if (move.archetype === 'DIVE' && this.stateFrame > 6 && this.isGrounded()) {
+            this.vx = 0;
+            this.vy = 0;
+            this.hasArmor = false;
+            this.isCounterStance = false;
+            this.setState(FighterState.IDLE);
+            return;
         }
 
         // Si es una Desesperación multi-hit (DM / SDM), lanzar la gran onda de energía como remate final de la ráfaga
@@ -617,6 +657,8 @@ class Fighter {
         const totalFrames = move.startup + move.active + move.recovery;
         if (this.stateFrame >= totalFrames && this.isGrounded()) {
             this.vx = 0;
+            this.hasArmor = false;
+            this.isCounterStance = false;
             this.setState(FighterState.IDLE);
         }
     }
@@ -766,13 +808,23 @@ class Fighter {
                 }
             }
 
-            // 3. Quarter Circle Back / Rush (214 + K o P, o 236 + K)
+            // 3. Quarter Circle Back con Puño (214 + P) -> MOVIMIENTO INSIGNIA ÚNICO DEL PERSONAJE
+            if (input.checkMotion('QCB', globalFrame) || input.checkMotion('HCB', globalFrame)) {
+                const pSigBtn = input.checkButtonBuffered('P', globalFrame);
+                if (pSigBtn.matched && this.moveset.special_SIG && (!canMaxFreeCancel || this.currentMoveKey !== 'special_SIG')) {
+                    input.consumeEntries(pSigBtn.entries);
+                    this._applyMaxFreeCancelCost(canMaxFreeCancel, matchCallbacks);
+                    this._startMove('special_SIG', FighterState.SPECIAL, isCanceling ? '¡CANCELACIÓN INSIGNIA!' : '');
+                    window.AudioSynth.play('special');
+                    return true;
+                }
+            }
+
+            // 4. Quarter Circle Back / Forward con Patada (214 + K o 236 + K) -> RUSH ASALTO
             if (input.checkMotion('QCB', globalFrame) || input.checkMotion('HCB', globalFrame) || input.checkMotion('QCF', globalFrame)) {
                 const kBtn = input.checkButtonBuffered('K', globalFrame);
-                const pBtn = input.checkMotion('QCB', globalFrame) ? input.checkButtonBuffered('P', globalFrame) : { matched: false };
-                const btnMatch = kBtn.matched ? kBtn : pBtn;
-                if (btnMatch.matched && (!canMaxFreeCancel || this.currentMoveKey !== 'special_QCB_K')) {
-                    input.consumeEntries(btnMatch.entries);
+                if (kBtn.matched && (!canMaxFreeCancel || this.currentMoveKey !== 'special_QCB_K')) {
+                    input.consumeEntries(kBtn.entries);
                     this._applyMaxFreeCancelCost(canMaxFreeCancel, matchCallbacks);
                     this._startMove('special_QCB_K', FighterState.SPECIAL, isCanceling ? '¡CANCELACIÓN ESPECIAL!' : '');
                     window.AudioSynth.play('special');
@@ -1005,7 +1057,20 @@ class Fighter {
         this.lastHitFrame = -99;
         this.hasSpawnedProjectile = false;
         this.cancelWindow = 0;
-        this.vx = 0;
+        this.hasArmor = Boolean(move.hasArmor);
+        this.isCounterStance = move.archetype === 'COUNTER';
+
+        if (move.archetype === 'DIVE') {
+            this.vy = -6.5;
+            this.vx = (move.velocityX || 7.5) * this.facing;
+            this.y = Math.min(this.y, this.groundY - 10);
+        } else if (move.archetype === 'SLIDE') {
+            this.vx = (move.velocityX || 8.5) * this.facing;
+        } else if (move.archetype === 'CHARGE') {
+            this.vx = (move.velocityX || 10.5) * this.facing;
+        } else {
+            this.vx = 0;
+        }
 
         if (move.invulnerableStartup) {
             this.invulnerableTimer = move.invulnerableStartup;
@@ -1059,6 +1124,32 @@ class Fighter {
      * @param {number} attackerFacing
      */
     receiveAttack(attackInfo, isBlocked, attackerFacing) {
+        // 0. Contragolpe / Parada (Counter Parry) activo
+        if (this.isCounterStance && this.state === FighterState.SPECIAL && this.currentMoveKey === 'special_SIG') {
+            this.isCounterStance = false;
+            this.invulnerableTimer = 32;
+            this.lastCancelType = '¡PARADA / CONTRAGOLPE!';
+            this.hitShakeTimer = 6;
+            this._pushAfterimage('#ffffff');
+            window.AudioSynth.play('parry');
+            if (this.currentMove) {
+                this.stateFrame = this.currentMove.startup;
+                this.vx = 8.2 * this.facing;
+            }
+            return { parried: true };
+        }
+
+        // 0.1 Armadura Pesada (Super Armor): Absorbe 1 impacto y continúa la carga
+        if (this.hasArmor && this.state === FighterState.SPECIAL && this.currentMoveKey === 'special_SIG') {
+            this.hasArmor = false;
+            const absorbedDamage = Math.max(4, Math.round(((attackInfo.damage || 45) * 0.45) / this.stats.defense));
+            this.hp = Math.max(1, this.hp - absorbedDamage);
+            this.hitShakeTimer = 5;
+            this._pushAfterimage('#f59e0b');
+            window.AudioSynth.play('block');
+            return { armored: true };
+        }
+
         this.hitShakeTimer = isBlocked ? 5 : 8;
         this.lastHitTypeReceived = attackInfo.hitType || 'HIGH';
 

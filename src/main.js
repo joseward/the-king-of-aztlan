@@ -163,8 +163,8 @@ window.addEventListener('DOMContentLoaded', () => {
             btnFullscreen.textContent = isFs ? '⛶ Salir Pantalla Completa' : '⛶ Pantalla Completa';
         }
         if (isFs) {
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
+            const vw = Math.max(window.innerWidth || 0, (window.screen && window.screen.width) || 0);
+            const vh = Math.max(window.innerHeight || 0, (window.screen && window.screen.height) || 0);
             const scale = Math.min(vw / 960, vh / 540);
             canvas.style.width = `${Math.floor(960 * scale)}px`;
             canvas.style.height = `${Math.floor(540 * scale)}px`;

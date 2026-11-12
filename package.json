@@ -1,0 +1,22 @@
+{
+  "name": "the-king-of-aztlan",
+  "version": "1.2.0",
+  "description": "2D Retro Arcade Fighting Game inspired by KOF 2002 / Neo-Geo MVS with 42 fighters and P2P online play",
+  "main": "src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "smoke": "node tests/smoke.test.js"
+  },
+  "keywords": [
+    "fighting-game",
+    "kof",
+    "neo-geo",
+    "arcade",
+    "canvas",
+    "pixel-art",
+    "p2p-multiplayer"
+  ],
+  "author": "joseward",
+  "license": "MIT"
+}

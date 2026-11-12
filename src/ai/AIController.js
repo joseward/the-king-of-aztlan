@@ -1,8 +1,36 @@
 /**
  * @file AIController.js
  * @description Controlador de Inteligencia Artificial reactiva estilo Arcade para el equipo del Jugador 2 (CPU).
- * Ejecuta desplazamientos, saltos cortos/largos, bloqueos defensivos, rodadas, ataques normales y combos con cancelación.
+ * - Generador pseudoaleatorio determinista con semilla (mulberry32 PRNG) para 0 desincronización y replays.
+ * - 4 Niveles de Dificultad auténticos estilo Neo-Geo: FÁCIL, NORMAL, DIFÍCIL y MAESTRO (Omega Rugal).
+ * - Modos de Dummy para Modo Práctica (Quieto, Agachado, Saltar, Bloquear Todo, Bloquear tras Primer Golpe).
+ * - Bloqueo adaptativo de guardia alta/baja, antiaéreos DP, rodada defensiva a través de proyectiles y combos con cancelación.
  */
+
+function mulberry32(a) {
+    return function () {
+        let t = (a += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+const AIDifficulty = {
+    FACIL: 'FACIL',
+    NORMAL: 'NORMAL',
+    DIFICIL: 'DIFICIL',
+    MAESTRO: 'MAESTRO'
+};
+
+const DummyMode = {
+    QUIETO: 'QUIETO',
+    AGACHADO: 'AGACHADO',
+    SALTAR: 'SALTAR',
+    BLOQUEAR_TODO: 'BLOQUEAR_TODO',
+    BLOQUEAR_TRAS_GOLPE: 'BLOQUEAR_TRAS_GOLPE',
+    CPU: 'CPU'
+};
 
 class AIController {
     constructor() {
@@ -10,6 +38,85 @@ class AIController {
         this.cooldown = 0;
         this.currentIntent = 'NEUTRAL';
         this.intentTimer = 0;
+
+        // Semilla determinista (mulberry32)
+        this.seed = 0x5f3759df;
+        this.rng = mulberry32(this.seed);
+
+        // Nivel de dificultad arcade
+        this.difficulty = AIDifficulty.NORMAL;
+
+        // Configuración para Modo Práctica (null = modo arcade / versus estándar)
+        this.dummyMode = null;
+    }
+
+    /**
+     * Establece una nueva semilla determinista para el PRNG.
+     * @param {number} newSeed
+     */
+    setSeed(newSeed) {
+        this.seed = (newSeed >>> 0) || 0x12345678;
+        this.rng = mulberry32(this.seed);
+    }
+
+    /**
+     * Devuelve un número flotante pseudoaleatorio en el rango [0, 1).
+     * @returns {number}
+     */
+    random() {
+        return this.rng();
+    }
+
+    /**
+     * Ajusta la dificultad activa de la CPU.
+     * @param {'FACIL'|'NORMAL'|'DIFICIL'|'MAESTRO'} diff
+     */
+    setDifficulty(diff) {
+        if (Object.values(AIDifficulty).includes(diff)) {
+            this.difficulty = diff;
+        }
+    }
+
+    /**
+     * Devuelve las tasas probabilísticas de combate para un nivel de dificultad dado.
+     * @param {string} diff
+     * @returns {{blockRate: number, cancelRate: number, superRate: number, antiAirRate: number, evadeRate: number}}
+     */
+    getDifficultyRates(diff = this.difficulty) {
+        if (diff === AIDifficulty.FACIL) {
+            return { blockRate: 0.22, cancelRate: 0.28, superRate: 0.10, antiAirRate: 0.06, evadeRate: 0.04 };
+        } else if (diff === AIDifficulty.DIFICIL) {
+            return { blockRate: 0.78, cancelRate: 0.85, superRate: 0.60, antiAirRate: 0.65, evadeRate: 0.25 };
+        } else if (diff === AIDifficulty.MAESTRO) {
+            return { blockRate: 0.94, cancelRate: 0.96, superRate: 0.88, antiAirRate: 0.88, evadeRate: 0.42 };
+        }
+        return { blockRate: 0.52, cancelRate: 0.65, superRate: 0.35, antiAirRate: 0.30, evadeRate: 0.12 };
+    }
+
+    /**
+     * Ajusta el comportamiento del maniquí en Modo Práctica.
+     * @param {string|null} mode
+     */
+    setDummyMode(mode) {
+        this.dummyMode = mode;
+    }
+
+    /**
+     * Rota de forma cíclica entre los modos disponibles del maniquí.
+     * @returns {string}
+     */
+    cycleDummyMode() {
+        const modes = [
+            DummyMode.QUIETO,
+            DummyMode.AGACHADO,
+            DummyMode.SALTAR,
+            DummyMode.BLOQUEAR_TODO,
+            DummyMode.BLOQUEAR_TRAS_GOLPE,
+            DummyMode.CPU
+        ];
+        const curIdx = modes.indexOf(this.dummyMode || DummyMode.QUIETO);
+        this.dummyMode = modes[(curIdx + 1) % modes.length];
+        return this.dummyMode;
     }
 
     /**
@@ -23,6 +130,10 @@ class AIController {
         if (!this.enabled || !aiFighter || !humanFighter) return;
 
         // Limpiar botones pulsados del frame previo
+        aiInput.held.up = false;
+        aiInput.held.down = false;
+        aiInput.held.left = false;
+        aiInput.held.right = false;
         aiInput.held.LP = false;
         aiInput.held.LK = false;
         aiInput.held.HP = false;
@@ -34,19 +145,87 @@ class AIController {
         const dist = Math.abs(dx);
         const dirToHuman = dx >= 0 ? 1 : -1;
 
-        // 1. Si el golpe de la IA acaba de conectar, intentar cancelar en Especial o Desesperación
+        // ---------------------------------------------------------------------
+        // A. RUTINAS DE MODO PRÁCTICA (DUMMY CONFIGURABLE)
+        // ---------------------------------------------------------------------
+        if (this.dummyMode && this.dummyMode !== DummyMode.CPU) {
+            switch (this.dummyMode) {
+                case DummyMode.QUIETO:
+                    return;
+
+                case DummyMode.AGACHADO:
+                    aiInput.held.down = true;
+                    return;
+
+                case DummyMode.SALTAR:
+                    if (aiFighter.isGrounded()) {
+                        aiInput.held.up = true;
+                    }
+                    return;
+
+                case DummyMode.BLOQUEAR_TODO: {
+                    const humanAtk = ['ATTACK', 'SPECIAL', 'SUPER'].includes(humanFighter.state);
+                    if (humanAtk) {
+                        this._setHorizontal(aiInput, -dirToHuman);
+                        aiInput.held.down = humanFighter.currentMove?.hitType === 'LOW';
+                    }
+                    return;
+                }
+
+                case DummyMode.BLOQUEAR_TRAS_GOLPE: {
+                    // Bloquea únicamente si ya recibió el primer impacto (para verificar combos reales)
+                    if (aiFighter.stunTimer > 0 || aiFighter.comboHitsTaken > 0) {
+                        this._setHorizontal(aiInput, -dirToHuman);
+                        aiInput.held.down = humanFighter.currentMove?.hitType === 'LOW';
+                    }
+                    return;
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // B. PARÁMETROS SEGÚN NIVEL DE DIFICULTAD
+        // ---------------------------------------------------------------------
+        const isBoss = aiFighter.template?.isBoss || this.difficulty === AIDifficulty.MAESTRO;
+        const diff = isBoss ? AIDifficulty.MAESTRO : this.difficulty;
+
+        const { blockRate, cancelRate, superRate, antiAirRate, evadeRate } = this.getDifficultyRates(diff);
+
+        // ---------------------------------------------------------------------
+        // 1. CANCELACIONES (Combo Hit-Confirm KOF 2002)
+        // ---------------------------------------------------------------------
         if (aiFighter.cancelWindow > 0 && aiFighter.moveHasHit) {
-            if (aiFighter.powerGauge >= 1000 && Math.random() < 0.35) {
+            const roll = this.random();
+
+            // Clímax Oculto MAX2 (Vida <= 35% + 2 Barras o Modo MAX)
+            const canMax2 = (aiFighter.hp / aiFighter.maxHp <= 0.35) && (aiFighter.isMaxMode || aiFighter.powerGauge >= 2000);
+            if (canMax2 && roll < superRate) {
+                this._injectMotion(aiInput, [2, 1, 4, 1, 2, 3, 6], globalFrame);
+                aiInput.held.MAX = true;
+                aiInput.held.HP = true;
+                return;
+            }
+
+            // Desesperación Normal / MAX
+            if (aiFighter.powerGauge >= 1000 && roll < superRate) {
                 this._injectMotion(aiInput, [2, 3, 6, 2, 3, 6], globalFrame);
                 aiInput.held.HP = true;
                 return;
             }
-            if (Math.random() < 0.65) {
-                const useQcb = Math.random() < 0.45;
-                if (useQcb) {
+
+            // Cancelación Especial / Movimiento Insignia
+            if (roll < cancelRate) {
+                const subRoll = this.random();
+                if (subRoll < 0.34 && aiFighter.moveset.special_SIG) {
+                    // 214+P Movimiento Insignia
+                    this._injectMotion(aiInput, [2, 1, 4], globalFrame);
+                    aiInput.held.HP = true;
+                } else if (subRoll < 0.68) {
+                    // 214+K Rush
                     this._injectMotion(aiInput, [2, 1, 4], globalFrame);
                     aiInput.held.HK = true;
                 } else {
+                    // 236+P Proyectil / Onda
                     this._injectMotion(aiInput, [2, 3, 6], globalFrame);
                     aiInput.held.HP = true;
                 }
@@ -54,51 +233,72 @@ class AIController {
             }
         }
 
-        // 2. Reacción defensiva si el jugador humano está atacando cerca
+        // ---------------------------------------------------------------------
+        // 2. REACCIÓN DEFENSIVA (Bloqueo adaptativo Alto/Bajo y Rodada)
+        // ---------------------------------------------------------------------
         const humanAttacking = ['ATTACK', 'SPECIAL', 'SUPER'].includes(humanFighter.state);
-        if (humanAttacking && dist < 155 && Math.random() < 0.55) {
-            // Mantener atrás para bloquear (o atrás-abajo contra ataques bajos)
-            this._setHorizontal(aiInput, -dirToHuman);
-            aiInput.held.down = humanFighter.currentMove?.hitType === 'LOW';
-            aiInput.held.up = false;
-            return;
-        }
-
-        // 3. Reacción antiaérea (DP+P) si el jugador humano salta encima de la IA
-        if (!humanFighter.isGrounded() && dist < 125 && aiFighter.isGrounded() && Math.random() < 0.14) {
-            this._injectMotion(aiInput, [6, 2, 3], globalFrame);
-            aiInput.held.HP = true;
-            return;
-        }
-
-        // 4. Actualizar intención táctica cada ciertos frames
-        this.intentTimer--;
-        if (this.intentTimer <= 0) {
-            const roll = Math.random();
-            if (dist > 250) {
-                this.currentIntent = roll < 0.55 ? 'APPROACH' : roll < 0.8 ? 'ZONING' : 'WAIT';
-                this.intentTimer = 22 + Math.floor(Math.random() * 20);
-            } else if (dist > 100) {
-                this.currentIntent = roll < 0.48 ? 'APPROACH' : roll < 0.75 ? 'POKE' : 'BACK_OFF';
-                this.intentTimer = 16 + Math.floor(Math.random() * 16);
-            } else {
-                this.currentIntent = roll < 0.62 ? 'PRESSURE' : roll < 0.82 ? 'EVADE' : 'BACK_OFF';
-                this.intentTimer = 14 + Math.floor(Math.random() * 14);
+        if (humanAttacking && dist < 175) {
+            if (this.random() < blockRate) {
+                this._setHorizontal(aiInput, -dirToHuman);
+                const isLow = humanFighter.currentMove?.hitType === 'LOW';
+                const isOverhead = humanFighter.currentMove?.hitType === 'OVERHEAD' || !humanFighter.isGrounded();
+                aiInput.held.down = isLow || (!isOverhead && this.random() < 0.4);
+                aiInput.held.up = false;
+                return;
             }
         }
 
-        // Activar Modo MAX si tiene 2 o más barras y está cerca
-        if (!aiFighter.isMaxMode && aiFighter.powerGauge >= 2000 && dist < 170 && Math.random() < 0.03) {
+        // ---------------------------------------------------------------------
+        // 3. REACCIÓN ANTIAÉREA (623+P DP) SI EL RIVAL SALTA
+        // ---------------------------------------------------------------------
+        if (!humanFighter.isGrounded() && dist < 140 && aiFighter.isGrounded()) {
+            if (this.random() < antiAirRate) {
+                this._injectMotion(aiInput, [6, 2, 3], globalFrame);
+                aiInput.held.HP = true;
+                return;
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 4. EVASIÓN / RODADA (AB) SI HAY PROYECTIL O PRESIÓN
+        // ---------------------------------------------------------------------
+        if (dist > 80 && dist < 230 && humanAttacking && this.random() < evadeRate) {
+            this._setHorizontal(aiInput, dirToHuman);
+            aiInput.held.EVADE = true;
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // 5. ACTIVACIÓN MODO MAX (BC)
+        // ---------------------------------------------------------------------
+        if (!aiFighter.isMaxMode && aiFighter.powerGauge >= 2000 && dist < 185 && this.random() < (diff === AIDifficulty.FACIL ? 0.01 : 0.04)) {
             aiInput.held.MAX = true;
             return;
+        }
+
+        // ---------------------------------------------------------------------
+        // 6. PLANIFICACIÓN DE INTENCIÓN TÁCTICA
+        // ---------------------------------------------------------------------
+        this.intentTimer--;
+        if (this.intentTimer <= 0) {
+            const roll = this.random();
+            if (dist > 260) {
+                this.currentIntent = roll < 0.55 ? 'APPROACH' : roll < 0.82 ? 'ZONING' : 'WAIT';
+                this.intentTimer = 18 + Math.floor(this.random() * 18);
+            } else if (dist > 115) {
+                this.currentIntent = roll < 0.45 ? 'APPROACH' : roll < 0.75 ? 'POKE' : 'BACK_OFF';
+                this.intentTimer = 14 + Math.floor(this.random() * 14);
+            } else {
+                this.currentIntent = roll < 0.60 ? 'PRESSURE' : roll < 0.82 ? 'SIG_MOVE' : 'BACK_OFF';
+                this.intentTimer = 12 + Math.floor(this.random() * 12);
+            }
         }
 
         switch (this.currentIntent) {
             case 'APPROACH':
                 this._setHorizontal(aiInput, dirToHuman);
                 aiInput.held.down = false;
-                // Ocasionalmente saltar hacia adelante (Salto Corto)
-                if (dist > 130 && dist < 220 && Math.random() < 0.04) {
+                if (dist > 140 && dist < 240 && this.random() < 0.06) {
                     aiInput.held.up = true;
                 } else {
                     aiInput.held.up = false;
@@ -109,7 +309,7 @@ class AIController {
                 this._setHorizontal(aiInput, 0);
                 aiInput.held.up = false;
                 aiInput.held.down = false;
-                if (Math.random() < 0.08) {
+                if (this.random() < 0.09) {
                     this._injectMotion(aiInput, [2, 3, 6], globalFrame);
                     aiInput.held.LP = true;
                 }
@@ -119,9 +319,9 @@ class AIController {
                 this._setHorizontal(aiInput, 0);
                 aiInput.held.up = false;
                 aiInput.held.down = false;
-                if (Math.random() < 0.16) {
+                if (this.random() < 0.18) {
                     const btns = ['LP', 'LK', 'HP', 'HK'];
-                    const chosen = btns[Math.floor(Math.random() * btns.length)];
+                    const chosen = btns[Math.floor(this.random() * btns.length)];
                     aiInput.held[chosen] = true;
                 }
                 break;
@@ -129,20 +329,21 @@ class AIController {
             case 'PRESSURE':
                 this._setHorizontal(aiInput, 0);
                 aiInput.held.up = false;
-                aiInput.held.down = Math.random() < 0.35;
-                if (Math.random() < 0.22) {
+                aiInput.held.down = this.random() < 0.38;
+                if (this.random() < 0.24) {
                     const btns = ['LP', 'LK', 'HP', 'HK'];
-                    const chosen = btns[Math.floor(Math.random() * btns.length)];
+                    const chosen = btns[Math.floor(this.random() * btns.length)];
                     aiInput.held[chosen] = true;
                 }
                 break;
 
-            case 'EVADE':
-                this._setHorizontal(aiInput, dirToHuman);
+            case 'SIG_MOVE':
+                this._setHorizontal(aiInput, 0);
                 aiInput.held.up = false;
                 aiInput.held.down = false;
-                if (Math.random() < 0.12) {
-                    aiInput.held.EVADE = true;
+                if (aiFighter.moveset.special_SIG && this.random() < 0.30) {
+                    this._injectMotion(aiInput, [2, 1, 4], globalFrame);
+                    aiInput.held.HP = true;
                 }
                 this.currentIntent = 'PRESSURE';
                 break;
@@ -175,4 +376,6 @@ class AIController {
     }
 }
 
+window.AIDifficulty = AIDifficulty;
+window.DummyMode = DummyMode;
 window.AIController = AIController;

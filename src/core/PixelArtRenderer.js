@@ -494,11 +494,15 @@ class PixelArtRenderer {
             pose === 'BLOWBACK' ||
             pose === 'THROW_GRAB' ||
             pose === 'MAX2_CLIMAX' ||
+            pose === 'SIG_GRAB' ||
+            pose === 'SIG_CHARGE' ||
+            pose === 'SIG_COUNTER' ||
+            pose === 'SIG_PILLAR' ||
             state === 'VICTORY' ||
             pose.includes('SPECIAL') ||
             pose.includes('SUPER');
 
-        const isKicking = pose.includes('KICK') || pose === 'SPECIAL_RUSH';
+        const isKicking = pose.includes('KICK') || pose === 'SPECIAL_RUSH' || pose === 'SIG_SLIDE' || pose === 'SIG_DIVE';
         const charId = fighter.template?.id || '';
 
         // Inclinación dinámica del torso (anticipa hacia atrás en Startup, se lanza al frente en Active)
@@ -899,6 +903,50 @@ class PixelArtRenderer {
             } else if (!isSilhouette && (charId === 'kyo' || charId === 'iori' || charId === 'kdash') && (f % 8 < 5)) {
                 // Flama viva en el puño en guardia para Kyo, Iori y K'
                 PixelArtRenderer.drawPixelBox(ctx, Math.round(fistX / p) - 1, Math.round(fistY / p) - 5, 3, 3, cEnergy, '#ffffff', null, p);
+            }
+        }
+
+        // 9. EFECTOS VISUALES ESPECTACULARES DE MOVIMIENTOS INSIGNIA (214+P)
+        if (!isSilhouette && state === 'SPECIAL' && fighter.currentMoveKey === 'special_SIG') {
+            const arch = move?.archetype || 'PILLAR';
+            if (arch === 'PILLAR' && atkPhase === 'ACTIVE') {
+                // Pilar Colosal de Energía Elemental surgiendo desde el suelo (Kyo, Iori, Benimaru, Rugal, etc.)
+                const pillarW = 84;
+                const pillarH = 340;
+                const pillarX = -Math.floor(pillarW * 0.5) + 24;
+                ctx.fillStyle = cEnergy;
+                ctx.fillRect(pillarX, -pillarH, pillarW, pillarH);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(pillarX + 18, -pillarH, pillarW - 36, pillarH);
+                for (let spark = 0; spark < 6; spark++) {
+                    const sy = -30 - spark * 45;
+                    const sx = pillarX + (spark % 2 === 0 ? -12 : pillarW + 4);
+                    PixelArtRenderer.drawPixelBox(ctx, Math.round(sx / p), Math.round(sy / p), 3, 3, cSecondary, '#ffffff', null, p);
+                }
+            } else if (arch === 'COUNTER' && fighter.isCounterStance) {
+                // Barrera de energía hexagonal de parada / contragolpe
+                const shieldX = 32;
+                const shieldY = -140;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.fillRect(shieldX, shieldY - 28, 8, 56);
+                ctx.fillRect(shieldX + 8, shieldY - 42, 6, 84);
+                ctx.fillStyle = cEnergy;
+                ctx.fillRect(shieldX + 14, shieldY - 32, 4, 64);
+            } else if (arch === 'CHARGE') {
+                // Aura sónica de choque blindada alrededor del torso
+                ctx.fillStyle = 'rgba(255, 190, 11, 0.75)';
+                ctx.fillRect(16, -165, 34, 75);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(38, -150, 18, 48);
+            } else if (arch === 'SLIDE') {
+                // Polvo denso y chispas a ras de suelo
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(12, -8, 54, 6);
+                ctx.fillStyle = cEnergy;
+                ctx.fillRect(-22, -6, 32, 4);
+            } else if (arch === 'DIVE') {
+                // Estela de cometa descendente a 45 grados
+                PixelArtRenderer.drawSlashArc(ctx, -24, -140, 48, -40, cEnergy, '#ffffff', p, 28, 1.4);
             }
         }
 

@@ -138,12 +138,16 @@ class HUD {
             ctx.fillRect(cx - 18 + i * 6, 11, 4, 4);
         }
 
-        // 2 Dígitos pixelados grandes del Timer (azul claro / lavanda)
-        const secStr = String(Math.max(0, Math.ceil(timerSeconds))).padStart(2, '0');
-        const digitFill = timerSeconds <= 10 ? '#ff5577' : '#9bb4ff';
-        const digitShade = timerSeconds <= 10 ? '#b81d3d' : '#5e78d6';
-        window.PixelArtRendererClass.drawArcadeDigit(ctx, secStr[0], cx - 32, 24, 4, digitFill, digitShade, '#080814');
-        window.PixelArtRendererClass.drawArcadeDigit(ctx, secStr[1], cx + 4, 24, 4, digitFill, digitShade, '#080814');
+        // 2 Dígitos pixelados grandes del Timer (o símbolo de infinito en Modo Práctica)
+        if (timerSeconds >= 900) {
+            this._drawPixelString(ctx, '∞', cx, 52, 34, '#9bb4ff', '#080814', 'center');
+        } else {
+            const secStr = String(Math.max(0, Math.ceil(timerSeconds))).padStart(2, '0');
+            const digitFill = timerSeconds <= 10 ? '#ff5577' : '#9bb4ff';
+            const digitShade = timerSeconds <= 10 ? '#b81d3d' : '#5e78d6';
+            window.PixelArtRendererClass.drawArcadeDigit(ctx, secStr[0], cx - 32, 24, 4, digitFill, digitShade, '#080814');
+            window.PixelArtRendererClass.drawArcadeDigit(ctx, secStr[1], cx + 4, 24, 4, digitFill, digitShade, '#080814');
+        }
 
         // D. Retratos Pixel-Art en las esquinas superiores con marco blanco biselado
         this._drawCornerPortrait(ctx, fighter1.template, p1PortraitX, portraitY, portraitSize, false);
@@ -782,7 +786,7 @@ class HUD {
         const modes = [
             {
                 title: '1. TORNEO ARCADE (12 NIVELES — JEFE FINAL: RUGAL)',
-                desc: 'Elige a tus 3 luchadores y supera los 12 niveles hasta enfrentar a OMEGA RUGAL.',
+                desc: 'Supera los 12 niveles hasta enfrentar a OMEGA RUGAL.',
                 badge: '12 ETAPAS',
                 accent: '#ffbe0b',
                 iconIdx: 0
@@ -803,17 +807,31 @@ class HUD {
             },
             {
                 title: '4. DESAFÍO FINAL: NIVEL 12 VS OMEGA RUGAL',
-                desc: 'Salta directamente al Nivel 12 para poner a prueba tu equipo contra Rugal.',
+                desc: 'Salta directamente al Nivel 12 para poner a prueba tu equipo.',
                 badge: 'JEFE FINAL',
                 accent: '#ff0055',
                 iconIdx: 41
+            },
+            {
+                title: '5. MODO PRÁCTICA (DUMMY, INPUTS Y FRAME DATA)',
+                desc: 'Entrenamiento libre con maniquí configurable y datos de combate.',
+                badge: 'PRÁCTICA',
+                accent: '#a855f7',
+                iconIdx: 12
+            },
+            {
+                title: '6. CONFIGURAR CONTROLES (TECLADO Y MANDOS)',
+                desc: 'Reasigna teclas y botones para Jugador 1 y Jugador 2 con guardado.',
+                badge: 'CONTROLES',
+                accent: '#38bdf8',
+                iconIdx: 30
             }
         ];
 
         const boxW = 720;
-        const boxH = 74;
-        const startY = 122;
-        const gap = 18;
+        const boxH = 54;
+        const startY = 106;
+        const gap = 10;
         const roster = window.CHARACTER_ROSTER || [];
 
         for (let i = 0; i < modes.length; i++) {
@@ -823,31 +841,29 @@ class HUD {
             const selected = i === modeIndex;
 
             ctx.fillStyle = selected ? m.accent : '#4a5568';
-            ctx.fillRect(bx - 4, by - 4, boxW + 8, boxH + 8);
+            ctx.fillRect(bx - 3, by - 3, boxW + 6, boxH + 6);
             ctx.fillStyle = selected ? '#221638' : '#14162b';
             ctx.fillRect(bx, by, boxW, boxH);
 
-            // Barra lateral de acento e ícono de retrato del modo
             ctx.fillStyle = selected ? m.accent : '#334155';
-            ctx.fillRect(bx, by, 10, boxH);
+            ctx.fillRect(bx, by, 8, boxH);
 
             const modeChar = roster[m.iconIdx] || roster[0];
             if (modeChar) {
-                const pCanv = window.PixelArtRenderer.getPortraitCanvas(modeChar, 58, false);
-                ctx.drawImage(pCanv, bx + 18, by + 8);
+                const pCanv = window.PixelArtRenderer.getPortraitCanvas(modeChar, 44, false);
+                ctx.drawImage(pCanv, bx + 14, by + 5);
             }
 
-            // Insignia derecha del modo
             ctx.fillStyle = selected ? m.accent : '#1e293b';
-            ctx.fillRect(bx + boxW - 114, by + 12, 100, 22);
-            this._drawPixelString(ctx, m.badge, bx + boxW - 64, by + 28, 10, selected ? '#090a14' : '#94a3b8', null, 'center');
+            ctx.fillRect(bx + boxW - 110, by + 16, 96, 22);
+            this._drawPixelString(ctx, m.badge, bx + boxW - 62, by + 31, 10, selected ? '#090a14' : '#94a3b8', null, 'center');
 
             this._drawPixelString(
                 ctx,
                 selected ? `► ${m.title}` : `  ${m.title}`,
-                bx + 86,
-                by + 30,
-                16,
+                bx + 70,
+                by + 24,
+                14,
                 selected ? '#ffea00' : '#ffffff',
                 '#000000',
                 'left'
@@ -855,16 +871,16 @@ class HUD {
             this._drawPixelString(
                 ctx,
                 m.desc,
-                bx + 96,
-                by + 54,
-                11,
+                bx + 80,
+                by + 42,
+                10,
                 selected ? '#70f8a0' : '#94a3b8',
                 '#000000',
                 'left'
             );
         }
 
-        this._drawPixelString(ctx, 'CONFIRMAR: U / ENTER / START / A-CRUZ   •   ATRÁS: P / ESC / B-CÍRCULO', cx, 508, 13, '#ff4d88', '#000000', 'center');
+        this._drawPixelString(ctx, 'CONFIRMAR: U / ENTER / START / A-CRUZ   •   ATRÁS: P / ESC / B-CÍRCULO', cx, 514, 12, '#ff4d88', '#000000', 'center');
         ctx.restore();
     }
 
@@ -1298,16 +1314,17 @@ class HUD {
     /**
      * Dibuja el Menú de Pausa y Navegación durante el combate (controlado con Teclado, Mando o Clic).
      */
-    drawPauseMenuOverlay(ctx, pauseCursor = 0) {
+    drawPauseMenuOverlay(ctx, pauseCursor = 0, gameMode = 'ARCADE_12', dummyMode = 'QUIETO') {
         window.PixelArtRendererClass.enforcePixelCrispness(ctx);
         ctx.save();
 
-        ctx.fillStyle = 'rgba(6, 8, 20, 0.82)';
+        ctx.fillStyle = 'rgba(6, 8, 20, 0.86)';
         ctx.fillRect(0, 0, this.width, this.height);
 
         const cx = Math.floor(this.width * 0.5);
-        const modalW = 540;
-        const modalH = 340;
+        const modalW = 580;
+        const isPractice = gameMode === 'PRACTICE';
+        const modalH = isPractice ? 400 : 360;
         const mx = cx - modalW * 0.5;
         const my = Math.floor((this.height - modalH) * 0.5);
 
@@ -1316,21 +1333,29 @@ class HUD {
         ctx.fillStyle = '#12152e';
         ctx.fillRect(mx, my, modalW, modalH);
 
-        this._drawPixelString(ctx, 'PAUSA / MENÚ DE NAVEGACIÓN', cx, my + 36, 22, '#ffbe0b', '#000000', 'center');
-        this._drawPixelString(ctx, 'USA W/S, FLECHAS O MANDO • U/ENTER/START: ELEGIR', cx, my + 60, 11, '#70f8a0', '#000000', 'center');
+        this._drawPixelString(ctx, isPractice ? 'PAUSA — MODO PRÁCTICA' : 'PAUSA / MENÚ DE NAVEGACIÓN', cx, my + 34, 22, '#ffbe0b', '#000000', 'center');
+        this._drawPixelString(ctx, 'USA W/S, FLECHAS O MANDO • U/ENTER/START: SELECCIONAR', cx, my + 56, 11, '#70f8a0', '#000000', 'center');
 
-        const options = [
+        const options = isPractice ? [
+            '1. CONTINUAR ENTRENAMIENTO',
+            `2. COMPORTAMIENTO MANIQUÍ: [ ${dummyMode} ]`,
+            '3. CONFIGURAR CONTROLES (TECLADO / MANDO)',
+            '4. CAMBIAR PERSONAJES',
+            '5. SALIR AL MENÚ DE MODOS',
+            '6. VOLVER AL MENÚ DE INICIO'
+        ] : [
             '1. CONTINUAR PELEA',
-            '2. CAMBIAR PERSONAJES (SELECCIÓN DE EQUIPOS)',
-            '3. CAMBIAR MODO DE PELEA (MENÚ DE MODOS)',
-            '4. REINICIAR COMBATE ACTUAL',
-            '5. VOLVER A LA PANTALLA DE TÍTULO'
+            '2. CONFIGURAR CONTROLES (TECLADO / MANDO)',
+            '3. CAMBIAR PERSONAJES (SELECCIÓN DE EQUIPOS)',
+            '4. CAMBIAR MODO DE PELEA (MENÚ DE MODOS)',
+            '5. REINICIAR COMBATE ACTUAL',
+            '6. VOLVER A LA PANTALLA DE TÍTULO'
         ];
 
-        const btnW = 472;
-        const btnH = 40;
-        const startY = my + 82;
-        const gap = 10;
+        const btnW = 512;
+        const btnH = 36;
+        const startY = my + 76;
+        const gap = 8;
 
         for (let i = 0; i < options.length; i++) {
             const bx = cx - btnW * 0.5;
@@ -1345,14 +1370,347 @@ class HUD {
             this._drawPixelString(
                 ctx,
                 selected ? `► ${options[i]}` : `  ${options[i]}`,
-                bx + 18,
-                by + 25,
-                14,
+                bx + 16,
+                by + 23,
+                13,
                 selected ? '#ffea00' : '#ffffff',
                 '#000000',
                 'left'
             );
         }
+
+        ctx.restore();
+    }
+
+    /**
+     * Dibuja la capa informativa del Modo Práctica (Dummy, Datos de Combo, Ventaja y Visualizador de Inputs).
+     */
+    drawPracticeOverlay(ctx, p1Input, p2Input, fighter1, fighter2, dummyMode = 'QUIETO') {
+        window.PixelArtRendererClass.enforcePixelCrispness(ctx);
+        ctx.save();
+
+        // 1. Panel de Datos de Combate (Centro Superior)
+        const cx = Math.floor(this.width * 0.5);
+        ctx.fillStyle = 'rgba(10, 14, 28, 0.78)';
+        ctx.fillRect(cx - 210, 68, 420, 52);
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 210, 68, 420, 52);
+
+        this._drawPixelString(ctx, `MANIQUÍ: [ ${dummyMode} ]`, cx, 83, 11, '#c084fc', '#000000', 'center');
+
+        const comboHits = fighter2 ? (fighter2.comboHitsTaken || 0) : 0;
+        const comboDmg = fighter2 ? Math.round(fighter2.damageTakenInCombo || 0) : 0;
+        const stunTimer = fighter2 ? fighter2.stunTimer : 0;
+        const guardPct = fighter2 ? Math.round((fighter2.guardGauge / fighter2.maxGuardGauge) * 100) : 100;
+
+        const statText = `COMBO: ${comboHits} GOLPES  •  DAÑO: ${comboDmg}  •  STUN: ${stunTimer}f  •  GUARDIA: ${guardPct}%`;
+        this._drawPixelString(ctx, statText, cx, 102, 10, comboHits > 1 ? '#ffea00' : '#94a3b8', '#000000', 'center');
+
+        this._drawPixelString(ctx, `ESTADO P1: ${fighter1 ? fighter1.state : 'IDLE'}  •  P2: ${fighter2 ? fighter2.state : 'IDLE'}`, cx, 114, 8, '#38bdf8', '#000000', 'center');
+
+        // 2. Visualizador de Inputs en Tiempo Real para Jugador 1 (Esquina Inferior Izquierda)
+        const drawInputDisplay = (input, startX, startY, label, color) => {
+            if (!input) return;
+            ctx.fillStyle = 'rgba(6, 8, 20, 0.75)';
+            ctx.fillRect(startX, startY, 180, 48);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(startX, startY, 180, 48);
+
+            this._drawPixelString(ctx, label, startX + 8, startY + 14, 9, color, '#000000', 'left');
+
+            let dirStr = '•';
+            if (input.held.up && input.held.left) dirStr = '↖';
+            else if (input.held.up && input.held.right) dirStr = '↗';
+            else if (input.held.down && input.held.left) dirStr = '↙';
+            else if (input.held.down && input.held.right) dirStr = '↘';
+            else if (input.held.up) dirStr = '↑';
+            else if (input.held.down) dirStr = '↓';
+            else if (input.held.left) dirStr = '←';
+            else if (input.held.right) dirStr = '→';
+
+            this._drawPixelString(ctx, `DIR: ${dirStr}`, startX + 8, startY + 36, 16, '#ffea00', '#000000', 'left');
+
+            const btnLabels = [
+                { id: 'LP', text: 'LP', on: input.held.LP },
+                { id: 'HP', text: 'HP', on: input.held.HP },
+                { id: 'LK', text: 'LK', on: input.held.LK },
+                { id: 'HK', text: 'HK', on: input.held.HK },
+                { id: 'EV', text: 'ROD', on: input.held.roll },
+                { id: 'MAX', text: 'MAX', on: input.held.max }
+            ];
+
+            let bx = startX + 68;
+            for (const b of btnLabels) {
+                ctx.fillStyle = b.on ? color : '#1e293b';
+                ctx.fillRect(bx, startY + 22, 16, 16);
+                this._drawPixelString(ctx, b.text[0], bx + 8, startY + 34, 9, b.on ? '#000000' : '#64748b', null, 'center');
+                bx += 18;
+            }
+        };
+
+        drawInputDisplay(p1Input, 20, this.height - 84, 'INPUTS JUGADOR 1', '#00ffc3');
+        drawInputDisplay(p2Input, this.width - 200, this.height - 84, 'INPUTS MANIQUÍ / P2', '#ff0055');
+
+        // 3. Barra de atajos rápidos inferior
+        ctx.fillStyle = 'rgba(6, 8, 20, 0.85)';
+        ctx.fillRect(cx - 240, this.height - 24, 480, 20);
+        this._drawPixelString(ctx, 'SELECT / NUM 0: REINICIAR POSICIONES   •   START / ESC: MENÚ DE PRÁCTICA', cx, this.height - 10, 10, '#38bdf8', '#000000', 'center');
+
+        ctx.restore();
+    }
+
+    /**
+     * Dibuja la pantalla de Configuración de Controles interactiva.
+     */
+    drawControlsConfigScreen(ctx, inputHandler, pIndex = 1, selectedActionIdx = 0, waitingForKey = false) {
+        window.PixelArtRendererClass.enforcePixelCrispness(ctx);
+        ctx.save();
+
+        // Fondo degradado Neo-Geo
+        const grad = ctx.createLinearGradient(0, 0, 0, this.height);
+        grad.addColorStop(0, '#0a0d1a');
+        grad.addColorStop(0.5, '#12182b');
+        grad.addColorStop(1, '#080a14');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, this.width, this.height);
+
+        // Scanlines
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        for (let y = 0; y < this.height; y += 4) {
+            ctx.fillRect(0, y, this.width, 2);
+        }
+
+        const cx = Math.floor(this.width * 0.5);
+        this._drawPixelString(ctx, 'THE KING OF AZTLAN — CONFIGURACIÓN DE CONTROLES', cx, 42, 20, '#38bdf8', '#000000', 'center');
+
+        // Pestañas de Jugador 1 / Jugador 2
+        const tabW = 280;
+        const tabY = 58;
+        const p1Active = pIndex === 1;
+
+        ctx.fillStyle = p1Active ? '#38bdf8' : '#1e293b';
+        ctx.fillRect(cx - tabW - 10, tabY, tabW, 28);
+        this._drawPixelString(ctx, '◄ [1] JUGADOR 1 (TECLADO / MANDO 1) ►', cx - tabW * 0.5 - 10, tabY + 19, 11, p1Active ? '#090a14' : '#94a3b8', null, 'center');
+
+        ctx.fillStyle = !p1Active ? '#ff0055' : '#1e293b';
+        ctx.fillRect(cx + 10, tabY, tabW, 28);
+        this._drawPixelString(ctx, '◄ [2] JUGADOR 2 (TECLADO / MANDO 2) ►', cx + tabW * 0.5 + 10, tabY + 19, 11, !p1Active ? '#ffffff' : '#94a3b8', null, 'center');
+
+        // Lista de acciones
+        const actionKeys = [
+            { id: 'up', label: 'Arriba / Salto' },
+            { id: 'down', label: 'Abajo / Agacharse' },
+            { id: 'left', label: 'Izquierda (Retroceder / Guardia)' },
+            { id: 'right', label: 'Derecha (Avanzar)' },
+            { id: 'lp', label: 'Puño Débil (LP)' },
+            { id: 'hp', label: 'Puño Fuerte (HP)' },
+            { id: 'lk', label: 'Patada Débil (LK)' },
+            { id: 'hk', label: 'Patada Fuerte (HK)' },
+            { id: 'roll', label: 'Evasión / Rodada (LP + LK)' },
+            { id: 'max', label: 'Modo MAX / Activación (HP + LK)' }
+        ];
+
+        const listW = 720;
+        const rowH = 26;
+        const startY = 96;
+
+        for (let i = 0; i < actionKeys.length; i++) {
+            const item = actionKeys[i];
+            const ry = startY + i * (rowH + 3);
+            const isSel = i === selectedActionIdx;
+
+            ctx.fillStyle = isSel ? '#1e2942' : '#0f172a';
+            ctx.fillRect(cx - listW * 0.5, ry, listW, rowH);
+            ctx.strokeStyle = isSel ? '#38bdf8' : '#334155';
+            ctx.lineWidth = isSel ? 2 : 1;
+            ctx.strokeRect(cx - listW * 0.5, ry, listW, rowH);
+
+            this._drawPixelString(ctx, isSel ? `► ${item.label}` : `  ${item.label}`, cx - listW * 0.5 + 14, ry + 18, 12, isSel ? '#ffea00' : '#e2e8f0', '#000000', 'left');
+
+            let keyDisplay = inputHandler ? inputHandler.getKeyDisplayName(pIndex, item.id) : '';
+            if (isSel && waitingForKey) {
+                keyDisplay = '>> PRESIONA UNA TECLA O BOTÓN <<';
+            }
+
+            this._drawPixelString(ctx, keyDisplay, cx + listW * 0.5 - 14, ry + 18, 12, (isSel && waitingForKey) ? '#00ffc3' : (isSel ? '#38bdf8' : '#94a3b8'), '#000000', 'right');
+        }
+
+        // Opciones inferiores (Restablecer y Salir)
+        const optRestablecerSel = selectedActionIdx === 10;
+        const optSalirSel = selectedActionIdx === 11;
+        const btnY = startY + actionKeys.length * (rowH + 3) + 8;
+
+        ctx.fillStyle = optRestablecerSel ? '#ffbe0b' : '#1e293b';
+        ctx.fillRect(cx - 320, btnY, 300, 32);
+        this._drawPixelString(ctx, optRestablecerSel ? '► RESTABLECER DEFECTO' : '  RESTABLECER DEFECTO', cx - 170, btnY + 21, 11, optRestablecerSel ? '#090a14' : '#e2e8f0', null, 'center');
+
+        ctx.fillStyle = optSalirSel ? '#00ffc3' : '#1e293b';
+        ctx.fillRect(cx + 20, btnY, 300, 32);
+        this._drawPixelString(ctx, optSalirSel ? '► GUARDAR Y VOLVER' : '  GUARDAR Y VOLVER', cx + 170, btnY + 21, 11, optSalirSel ? '#090a14' : '#e2e8f0', null, 'center');
+
+        // Footer instructivo
+        this._drawPixelString(ctx, 'ARRIBA/ABAJO: SELECCIONAR • ENTER/U/A: ASIGNAR • TAB/1/2: CAMBIAR JUGADOR • R: RESTABLECER • ESC: SALIR', cx, 516, 11, '#ff4d88', '#000000', 'center');
+
+        ctx.restore();
+    }
+
+    /**
+     * Dibuja la pantalla cinematográfica de victoria de equipo (Ending Screen tras derrotar a Omega Rugal).
+     */
+    drawTeamEndingScreen(ctx, team1 = [], globalFrame = 0) {
+        window.PixelArtRendererClass.enforcePixelCrispness(ctx);
+        ctx.save();
+
+        const grad = ctx.createLinearGradient(0, 0, 0, this.height);
+        grad.addColorStop(0, '#070a14');
+        grad.addColorStop(0.5, '#181226');
+        grad.addColorStop(1, '#05070e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, this.width, this.height);
+
+        // Scanlines
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        for (let y = 0; y < this.height; y += 4) {
+            ctx.fillRect(0, y, this.width, 2);
+        }
+
+        const cx = Math.floor(this.width * 0.5);
+
+        // Título con brillo
+        const glow = Math.sin(globalFrame * 0.08) * 0.2 + 0.8;
+        this._drawPixelString(ctx, '¡¡ CAMPEONES SUPREMOS DEL TORNEO DE AZTLÁN !!', cx, 54, 22, `rgba(255, 190, 11, ${glow})`, '#000000', 'center');
+        this._drawPixelString(ctx, 'EL ALTAR SAGRADO HA SIDO LIBERADO • EL TIRANO OMEGA RUGAL HA CAÍDO', cx, 78, 12, '#70f8a0', '#000000', 'center');
+
+        // Retratos de los 3 héroes del equipo vencedor
+        const roster = window.CHARACTER_ROSTER || [];
+        const portSize = 96;
+        const totalW = 3 * portSize + 2 * 48;
+        const startX = cx - totalW * 0.5;
+
+        for (let i = 0; i < 3; i++) {
+            const member = team1[i] || roster[i];
+            const px = startX + i * (portSize + 48);
+            const py = 112;
+
+            ctx.fillStyle = '#ffbe0b';
+            ctx.fillRect(px - 4, py - 4, portSize + 8, portSize + 8);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(px, py, portSize, portSize);
+
+            if (member) {
+                const pCanv = window.PixelArtRenderer.getPortraitCanvas(member, portSize, false);
+                ctx.drawImage(pCanv, px, py);
+            }
+
+            this._drawPixelString(ctx, member ? member.name.toUpperCase() : `HÉROE ${i + 1}`, px + portSize * 0.5, py + portSize + 22, 11, '#ffea00', '#000000', 'center');
+            this._drawPixelString(ctx, member ? (member.title || 'GUERRERO') : 'CAMPEÓN', px + portSize * 0.5, py + portSize + 36, 9, '#94a3b8', '#000000', 'center');
+        }
+
+        // Epílogo narrativo
+        const narrativeBoxW = 760;
+        const narrativeBoxH = 110;
+        const nbX = cx - narrativeBoxW * 0.5;
+        const nbY = 282;
+
+        ctx.fillStyle = 'rgba(10, 14, 28, 0.88)';
+        ctx.fillRect(nbX, nbY, narrativeBoxW, narrativeBoxH);
+        ctx.strokeStyle = '#ffbe0b';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(nbX, nbY, narrativeBoxW, narrativeBoxH);
+
+        const lines = [
+            'Con el colapso del Altar de Obsidiana, la oscura ambición de Omega Rugal ha sido destruida.',
+            'La llama cósmica de Quetzalcóatl vuelve a arder con honor sobre la gran pirámide de Aztlán.',
+            'Los tres guerreros han escrito sus nombres en la eternidad del calendario solar.',
+            '¡El reino de Aztlán reconoce a sus más grandes leyendas marciales!'
+        ];
+
+        for (let l = 0; l < lines.length; l++) {
+            this._drawPixelString(ctx, lines[l], cx, nbY + 28 + l * 20, 11, '#f8fafc', '#000000', 'center');
+        }
+
+        // Prompt parpadeante para avanzar a los créditos
+        if (Math.floor(globalFrame / 30) % 2 === 0) {
+            this._drawPixelString(ctx, '► PRESIONA CUALQUIER BOTÓN PARA VER LOS CRÉDITOS ◄', cx, 432, 13, '#00ffc3', '#000000', 'center');
+        }
+
+        this._drawPixelString(ctx, 'U / ENTER / START / A: CONTINUAR   •   ESC: SALIR AL MENÚ', cx, 492, 11, '#ff4d88', '#000000', 'center');
+
+        ctx.restore();
+    }
+
+    /**
+     * Dibuja los Créditos Finales con desplazamiento suave (Ending Credits Arcade).
+     */
+    drawCreditsScreen(ctx, globalFrame = 0, scrollY = 0) {
+        window.PixelArtRendererClass.enforcePixelCrispness(ctx);
+        ctx.save();
+
+        ctx.fillStyle = '#04060d';
+        ctx.fillRect(0, 0, this.width, this.height);
+
+        // Estrellas parpadeantes de fondo
+        for (let i = 0; i < 40; i++) {
+            const sx = (i * 97) % this.width;
+            const sy = (i * 61) % this.height;
+            const bright = Math.sin(globalFrame * 0.05 + i) * 0.5 + 0.5;
+            ctx.fillStyle = `rgba(255, 255, 255, ${bright * 0.6})`;
+            ctx.fillRect(sx, sy, 2, 2);
+        }
+
+        // Scanlines
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        for (let y = 0; y < this.height; y += 4) {
+            ctx.fillRect(0, y, this.width, 2);
+        }
+
+        const cx = Math.floor(this.width * 0.5);
+
+        const credits = [
+            { text: 'THE KING OF AZTLAN', size: 24, color: '#ffbe0b', space: 32 },
+            { text: 'TORNEO DE ARTES MARCIALES 3 VS 3', size: 12, color: '#00ffc3', space: 48 },
+
+            { text: 'DIRECCIÓN Y PRODUCCIÓN GENERAL', size: 11, color: '#94a3b8', space: 18 },
+            { text: 'JOSEWARD & EQUIPO AZTLÁN', size: 15, color: '#ffffff', space: 40 },
+
+            { text: 'MOTOR DE COMBATE A 60 FPS', size: 11, color: '#94a3b8', space: 18 },
+            { text: 'HTML5 CANVAS FIXED-TIMESTEP ENGINE', size: 14, color: '#38bdf8', space: 40 },
+
+            { text: 'SISTEMA DE LUCHADORES Y ROSTER', size: 11, color: '#94a3b8', space: 18 },
+            { text: '42 PERSONAJES CON MOVIMIENTOS FIRMA Y MAX2', size: 14, color: '#f59e0b', space: 40 },
+
+            { text: 'ESCENARIOS MESOAMERICANOS', size: 11, color: '#94a3b8', space: 18 },
+            { text: 'TEOTIHUACÁN • XOCHIMILCO • POPOCATÉPETL • CENOTE SELVA MAYA', size: 12, color: '#10b981', space: 40 },
+
+            { text: 'SÍNTESIS DE AUDIO RETRO WEBAUDIO', size: 11, color: '#94a3b8', space: 18 },
+            { text: 'SINTETIZADOR DE CHIPTUNES Y SFX NEO-GEO', size: 14, color: '#a855f7', space: 40 },
+
+            { text: 'CÓDIGO DE RED DETERMINISTA', size: 11, color: '#94a3b8', space: 18 },
+            { text: 'PEER-TO-PEER CON BUFFER DE RETARDO DE 2 FRAMES', size: 13, color: '#06b6d4', space: 40 },
+
+            { text: 'INSPIRADO EN LAS GLORIAS DE LA ERA ARCADE', size: 11, color: '#94a3b8', space: 18 },
+            { text: 'SNK NEO-GEO MVS & THE KING OF FIGHTERS 2002', size: 14, color: '#ff0055', space: 48 },
+
+            { text: '¡GRACIAS POR JUGAR!', size: 20, color: '#ffea00', space: 24 },
+            { text: 'THANK YOU FOR PLAYING!', size: 13, color: '#00ffc3', space: 60 },
+            { text: 'FIN', size: 22, color: '#ffbe0b', space: 40 }
+        ];
+
+        let curY = this.height - scrollY;
+
+        for (const item of credits) {
+            if (curY > -40 && curY < this.height + 40) {
+                this._drawPixelString(ctx, item.text, cx, Math.floor(curY), item.size, item.color, '#000000', 'center');
+            }
+            curY += item.space;
+        }
+
+        // Barra inferior fija
+        ctx.fillStyle = 'rgba(5, 7, 14, 0.9)';
+        ctx.fillRect(0, this.height - 32, this.width, 32);
+        this._drawPixelString(ctx, 'PRESIONA START / ESC / ENTER PARA VOLVER AL MENÚ PRINCIPAL', cx, this.height - 12, 11, '#ff4d88', '#000000', 'center');
 
         ctx.restore();
     }

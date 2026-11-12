@@ -41,6 +41,12 @@ class NetworkManager {
         this.statusCallback = null;
         this.pingMs = 0;
         this._lastPingSent = 0;
+
+        // Búfer de retardo de entradas (Delay-Based Netcode) para eliminar tirones y desincronizaciones
+        this.inputDelay = 2; // 2 frames de búfer estándar en juegos de lucha online
+        this.localInputQueue = new Map();
+        this.remoteInputQueue = new Map();
+        this.lastKnownRemoteHeld = { ...EMPTY_HELD };
     }
 
     onStatusChange(cb) {
@@ -316,12 +322,15 @@ class NetworkManager {
     }
 
     /**
-     * Llamado en cada frame por GameLoop para intercambiar inputs a 60 FPS y estado autoritativo a 20 Hz.
+     * Llamado en cada frame por GameLoop para intercambiar inputs con delay netcode (60 FPS) y estado autoritativo a 30 Hz.
      */
     syncFrame() {
         if (!this.isOnline || !this.engine) return;
 
+        const currentFrame = this.engine.globalFrame || 0;
+        const targetFrame = currentFrame + this.inputDelay;
         const localPlayerIndex = this.role === 'HOST' ? 1 : 2;
+        const remotePlayerIndex = this.role === 'HOST' ? 2 : 1;
         const p1Raw = this.engine.inputHandler.getPlayer(1);
         const p2Raw = this.engine.inputHandler.getPlayer(2);
 
@@ -337,20 +346,36 @@ class NetworkManager {
             );
         }
 
-        if (this.role === 'HOST') {
-            p1Raw.remoteHeld = heldSnapshot;
-            if (!p2Raw.remoteHeld) p2Raw.remoteHeld = { ...EMPTY_HELD };
-        } else {
-            p2Raw.remoteHeld = heldSnapshot;
-            if (!p1Raw.remoteHeld) p1Raw.remoteHeld = { ...EMPTY_HELD };
-        }
+        // Registrar en el búfer local para ejecución en targetFrame
+        this.localInputQueue.set(targetFrame, heldSnapshot);
 
+        // Enviar al oponente indicando el frame de destino
         this._sendPacket({
             type: 'INPUT_FRAME',
             playerIndex: localPlayerIndex,
+            frame: targetFrame,
             held: heldSnapshot,
             cursor: this.role === 'HOST' ? this.engine.selectCursor : this.engine.selectCursorP2
         });
+
+        // Obtener la entrada local programada para el frame actual (o el snapshot inmediato si arranca)
+        const activeLocalHeld = this.localInputQueue.get(currentFrame) || heldSnapshot;
+        this.localInputQueue.delete(currentFrame - 15);
+
+        // Obtener la entrada remota programada para el frame actual (o la última conocida si hay latencia de red)
+        if (this.remoteInputQueue.has(currentFrame)) {
+            this.lastKnownRemoteHeld = this.remoteInputQueue.get(currentFrame);
+            this.remoteInputQueue.delete(currentFrame);
+        }
+        this.remoteInputQueue.delete(currentFrame - 15);
+
+        if (this.role === 'HOST') {
+            p1Raw.remoteHeld = activeLocalHeld;
+            p2Raw.remoteHeld = this.lastKnownRemoteHeld;
+        } else {
+            p1Raw.remoteHeld = this.lastKnownRemoteHeld;
+            p2Raw.remoteHeld = activeLocalHeld;
+        }
     }
 
     /**
@@ -400,25 +425,28 @@ class NetworkManager {
 
     _serializeFighter(f) {
         return {
-            id: f.id,
+            id: f.template ? f.template.id : (f.id || f.name),
             x: f.x,
             y: f.y,
             vx: f.vx,
             vy: f.vy,
-            grounded: f.grounded,
+            grounded: typeof f.isGrounded === 'function' ? f.isGrounded() : Boolean(f.grounded),
             facing: f.facing,
             hp: f.hp,
             redHp: f.recoverableRedHp,
             power: f.powerGauge,
+            guardGauge: f.guardGauge,
             isMaxMode: f.isMaxMode,
             maxModeTimer: f.maxModeTimer,
             state: f.state,
             stateFrame: f.stateFrame,
             moveKey: f.currentMoveKey,
-            moveHitsLanded: f.moveHitsLanded,
-            hitstunTimer: f.hitstunTimer,
-            blockstunTimer: f.blockstunTimer,
-            comboCount: f.comboCount
+            moveHitsLanded: f.moveHitsLanded || 0,
+            chainStepCount: f.chainStepCount || 0,
+            stunTimer: f.stunTimer || 0,
+            comboCount: f.comboHitsTaken || 0,
+            invulnerableTimer: f.invulnerableTimer || 0,
+            lastCancelType: f.lastCancelType || ''
         };
     }
 
@@ -428,16 +456,18 @@ class NetworkManager {
         fighter.y = snap.y;
         fighter.vx = snap.vx;
         fighter.vy = snap.vy;
-        fighter.grounded = snap.grounded;
         fighter.facing = snap.facing;
         fighter.hp = snap.hp;
         fighter.recoverableRedHp = snap.redHp;
         fighter.powerGauge = snap.power;
+        if (typeof snap.guardGauge === 'number') fighter.guardGauge = snap.guardGauge;
         fighter.isMaxMode = snap.isMaxMode;
         fighter.maxModeTimer = snap.maxModeTimer;
-        fighter.hitstunTimer = snap.hitstunTimer;
-        fighter.blockstunTimer = snap.blockstunTimer;
-        fighter.comboCount = snap.comboCount;
+        fighter.stunTimer = typeof snap.stunTimer === 'number' ? snap.stunTimer : (snap.hitstunTimer || 0);
+        fighter.comboHitsTaken = snap.comboCount || 0;
+        if (typeof snap.chainStepCount === 'number') fighter.chainStepCount = snap.chainStepCount;
+        if (typeof snap.invulnerableTimer === 'number') fighter.invulnerableTimer = snap.invulnerableTimer;
+        if (snap.lastCancelType !== undefined) fighter.lastCancelType = snap.lastCancelType;
 
         if (fighter.state !== snap.state || fighter.currentMoveKey !== snap.moveKey) {
             fighter.state = snap.state;
@@ -470,8 +500,11 @@ class NetworkManager {
         if (packet.type === 'INPUT_FRAME') {
             const remotePlayerIndex = this.role === 'HOST' ? 2 : 1;
             if (packet.playerIndex === remotePlayerIndex && packet.held) {
+                const targetFrame = typeof packet.frame === 'number' ? packet.frame : (this.engine.globalFrame || 0);
+                this.remoteInputQueue.set(targetFrame, packet.held);
+                this.lastKnownRemoteHeld = { ...EMPTY_HELD, ...packet.held };
                 const remoteInput = this.engine.inputHandler.getPlayer(remotePlayerIndex);
-                remoteInput.remoteHeld = { ...EMPTY_HELD, ...packet.held };
+                remoteInput.remoteHeld = this.lastKnownRemoteHeld;
                 if (typeof packet.cursor === 'number') {
                     if (remotePlayerIndex === 1) {
                         this.engine.selectCursor = packet.cursor;
@@ -593,6 +626,9 @@ class NetworkManager {
     disconnect() {
         this.isOnline = false;
         this.role = null;
+        this.localInputQueue.clear();
+        this.remoteInputQueue.clear();
+        this.lastKnownRemoteHeld = { ...EMPTY_HELD };
         if (this.conn) {
             try { this.conn.close(); } catch (e) {}
             this.conn = null;

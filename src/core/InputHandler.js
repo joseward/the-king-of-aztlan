@@ -317,11 +317,80 @@ class InputHandler {
             2: new PlayerInputState(2)
         };
 
+        // Mapeo de teclas configurable por jugador
+        this.keymaps = {
+            1: { ...DEFAULT_KEYMAP[1] },
+            2: { ...DEFAULT_KEYMAP[2] }
+        };
+
+        // Estado para reasignación interactiva de controles
+        this.rebindTarget = null; // { playerIndex: 1|2, action: 'LP'|... }
+
         // Zona muerta del stick analógico para lectura limpia de diagonales (236, 623, 214)
         this.analogDeadzone = 0.35;
 
+        this._loadKeymapsFromStorage();
         this._bindKeyboardEvents();
         this._bindGamepadEvents();
+    }
+
+    _loadKeymapsFromStorage() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        try {
+            const raw = window.localStorage.getItem('aztlan_controls');
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data && data[1]) this.keymaps[1] = { ...this.keymaps[1], ...data[1] };
+                if (data && data[2]) this.keymaps[2] = { ...this.keymaps[2], ...data[2] };
+            }
+        } catch (e) {}
+    }
+
+    saveKeymapsToStorage() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        try {
+            window.localStorage.setItem('aztlan_controls', JSON.stringify(this.keymaps));
+        } catch (e) {}
+    }
+
+    setKeybind(playerIndex, action, keyCode) {
+        if (!this.keymaps[playerIndex] || !keyCode) return;
+        const normAction = action === 'roll' ? 'EVADE' : (action === 'max' ? 'MAX' : (['lp', 'hp', 'lk', 'hk'].includes(action) ? action.toUpperCase() : action));
+        if (ACTION_KEYS.includes(normAction)) {
+            this.keymaps[playerIndex][normAction] = keyCode;
+            this.saveKeymapsToStorage();
+        }
+    }
+
+    getKeyDisplayName(playerIndex, action) {
+        if (!this.keymaps[playerIndex]) return '—';
+        const normAction = action === 'roll' ? 'EVADE' : (action === 'max' ? 'MAX' : (['lp', 'hp', 'lk', 'hk'].includes(action) ? action.toUpperCase() : action));
+        const code = this.keymaps[playerIndex][normAction];
+        return InputHandler.getKeyDisplayName(code);
+    }
+
+    resetDefaults() {
+        this.keymaps = {
+            1: { ...DEFAULT_KEYMAP[1] },
+            2: { ...DEFAULT_KEYMAP[2] }
+        };
+        this.saveKeymapsToStorage();
+    }
+
+    static getKeyDisplayName(keyCode) {
+        if (!keyCode) return '—';
+        if (keyCode.startsWith('Key')) return keyCode.slice(3);
+        if (keyCode.startsWith('Digit')) return keyCode.slice(5);
+        if (keyCode.startsWith('Numpad')) return `Num ${keyCode.slice(6)}`;
+        if (keyCode === 'ArrowUp') return '↑ Arriba';
+        if (keyCode === 'ArrowDown') return '↓ Abajo';
+        if (keyCode === 'ArrowLeft') return '← Izquierda';
+        if (keyCode === 'ArrowRight') return '→ Derecha';
+        if (keyCode === 'Space') return 'Espacio';
+        if (keyCode === 'Enter') return 'Enter';
+        if (keyCode === 'ShiftLeft' || keyCode === 'ShiftRight') return 'Shift';
+        if (keyCode === 'ControlLeft' || keyCode === 'ControlRight') return 'Ctrl';
+        return keyCode;
     }
 
     _bindKeyboardEvents() {
@@ -329,6 +398,15 @@ class InputHandler {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                 e.preventDefault();
             }
+
+            if (this.rebindTarget) {
+                e.preventDefault();
+                this.setKeybind(this.rebindTarget.playerIndex, this.rebindTarget.action, e.code);
+                this.rebindTarget = null;
+                if (window.AudioSynth) window.AudioSynth.play('menu_confirm');
+                return;
+            }
+
             this._handleKey(e.code, true);
         });
 
@@ -352,14 +430,14 @@ class InputHandler {
 
     _handleKey(code, isDown) {
         // Jugador 1
-        for (const [action, keyCode] of Object.entries(DEFAULT_KEYMAP[1])) {
+        for (const [action, keyCode] of Object.entries(this.keymaps[1])) {
             if (code === keyCode) {
                 this.players[1].keyboardHeld[action] = isDown;
                 this.players[1].held[action] = isDown;
             }
         }
-        // Jugador 2 (Numpad o teclas alternativas F/G/H/V/B/N)
-        for (const [action, keyCode] of Object.entries(DEFAULT_KEYMAP[2])) {
+        // Jugador 2 (Mapeo personalizado o Numpad / teclas alternativas F/G/H/V/B/N)
+        for (const [action, keyCode] of Object.entries(this.keymaps[2])) {
             if (code === keyCode) {
                 this.players[2].keyboardHeld[action] = isDown;
                 this.players[2].held[action] = isDown;

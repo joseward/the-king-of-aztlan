@@ -494,6 +494,52 @@ function buildCharacterMoveset(customConfig = {}) {
             hitbox: { offsetX: 16, offsetY: -168, width: 92, height: 74 }
         },
 
+        special_SIG: {
+            name: customConfig.sigName || 'Ataque Insignia (214+P)',
+            command: '214 + LP/HP (Abajo-Atrás + Puño)',
+            category: 'SPECIAL',
+            motion: 'QCB',
+            buttonType: 'P',
+            archetype: customConfig.sigArchetype || 'PILLAR',
+            startup: customConfig.sigStartup !== undefined ? customConfig.sigStartup : 4,
+            active: customConfig.sigActive !== undefined ? customConfig.sigActive : 12,
+            recovery: customConfig.sigRecovery !== undefined ? customConfig.sigRecovery : 16,
+            hits: customConfig.sigHits !== undefined ? customConfig.sigHits : 1,
+            damage: customConfig.sigDamage !== undefined ? customConfig.sigDamage : 85,
+            chipDamage: customConfig.sigChipDamage !== undefined ? customConfig.sigChipDamage : 16,
+            hitstun: customConfig.sigHitstun !== undefined ? customConfig.sigHitstun : 26,
+            blockstun: customConfig.sigBlockstun !== undefined ? customConfig.sigBlockstun : 16,
+            pushback: customConfig.sigPushback !== undefined ? customConfig.sigPushback : 3.8,
+            meterGain: 90,
+            hitType: customConfig.sigHitType || (customConfig.sigArchetype === 'SLIDE' ? 'LOW' : 'MID'),
+            causesKnockdown: customConfig.sigKnockdown !== undefined ? customConfig.sigKnockdown : true,
+            juggleHit: true,
+            unblockable: customConfig.sigArchetype === 'GRAB',
+            invulnerableStartup: customConfig.sigArchetype === 'TELEPORT' ? 22 : (customConfig.sigArchetype === 'COUNTER' ? 20 : 0),
+            hasArmor: customConfig.sigArchetype === 'CHARGE',
+            velocityX: customConfig.sigVelocityX !== undefined ? customConfig.sigVelocityX : (
+                customConfig.sigArchetype === 'CHARGE' ? 10.5 :
+                customConfig.sigArchetype === 'SLIDE' ? 8.5 : 0
+            ),
+            velocityY: customConfig.sigVelocityY !== undefined ? customConfig.sigVelocityY : 0,
+            pose: customConfig.sigPose || (
+                customConfig.sigArchetype === 'GRAB' ? 'SIG_GRAB' :
+                customConfig.sigArchetype === 'TELEPORT' ? 'SIG_TELEPORT' :
+                customConfig.sigArchetype === 'CHARGE' ? 'SIG_CHARGE' :
+                customConfig.sigArchetype === 'COUNTER' ? 'SIG_COUNTER' :
+                customConfig.sigArchetype === 'SLIDE' ? 'SIG_SLIDE' :
+                customConfig.sigArchetype === 'DIVE' ? 'SIG_DIVE' : 'SIG_PILLAR'
+            ),
+            cancelableIntoSuper: true,
+            maxCancelable: true,
+            hitbox: customConfig.sigHitbox || (
+                customConfig.sigArchetype === 'PILLAR' ? { offsetX: -16, offsetY: -240, width: 120, height: 240 } :
+                customConfig.sigArchetype === 'SLIDE' ? { offsetX: 18, offsetY: -52, width: 94, height: 48 } :
+                customConfig.sigArchetype === 'GRAB' ? { offsetX: 10, offsetY: -160, width: 72, height: 110 } :
+                { offsetX: 18, offsetY: -180, width: 88, height: 96 }
+            )
+        },
+
         super_DM: {
             name: customConfig.dmName || 'Desperation Move (236236+P)',
             command: '236236 + P o K (1 Stock)',
@@ -648,7 +694,24 @@ function createFighterTemplate(cfg) {
             dpName: cfg.dpName || 'Rising Dragon (623+P)',
             qcbName: cfg.qcbName || 'Rush Combination (214+K)',
             dmName: cfg.dmName || 'Desperation Overdrive (236236+P)',
-            sdmName: cfg.sdmName || 'MAX Climax Finish (236236+PP)'
+            sdmName: cfg.sdmName || 'MAX Climax Finish (236236+PP)',
+            sigName: cfg.sigName || 'Ataque Insignia (214+P)',
+            sigArchetype: cfg.sigArchetype || 'PILLAR',
+            sigStartup: cfg.sigStartup,
+            sigActive: cfg.sigActive,
+            sigRecovery: cfg.sigRecovery,
+            sigHits: cfg.sigHits,
+            sigDamage: cfg.sigDamage,
+            sigChipDamage: cfg.sigChipDamage,
+            sigHitstun: cfg.sigHitstun,
+            sigBlockstun: cfg.sigBlockstun,
+            sigPushback: cfg.sigPushback,
+            sigHitType: cfg.sigHitType,
+            sigKnockdown: cfg.sigKnockdown,
+            sigVelocityX: cfg.sigVelocityX,
+            sigVelocityY: cfg.sigVelocityY,
+            sigPose: cfg.sigPose,
+            sigHitbox: cfg.sigHitbox
         })
     };
 }
@@ -665,21 +728,24 @@ const CHARACTER_ROSTER = [
         hp: 1000, speed: 4.7, atk: 1.04,
         bodyType: 'athletic', hairStyle: 'spiky_headband', hairColor: '#3b2219', outfitStyle: 'jacket_pants',
         primaryColor: '#1a1f36', secondaryColor: '#ffffff', pantsColor: '#161b2e', skinColor: '#e2a778', energyColor: '#ff5500',
-        qcfName: '108 Shiki: Yami Barai', dpName: '100 Shiki: Oniyaki', qcbName: 'Aragami / Dokugami Rekka', dmName: 'Ura 108 Shiki: Orochinagi'
+        qcfName: '108 Shiki: Yami Barai', dpName: '100 Shiki: Oniyaki', qcbName: 'Aragami / Dokugami Rekka', dmName: 'Ura 108 Shiki: Orochinagi',
+        sigArchetype: 'PILLAR', sigName: '115 Shiki: Pilar Carmesí (214+P)'
     }),
     createFighterTemplate({
         id: 'benimaru', name: 'BENIMARU', teamId: 'japan', teamName: 'TEAM JAPAN', title: 'Shooting Star Relámpago',
         hp: 960, speed: 5.2, atk: 0.98,
         bodyType: 'slender_tall', hairStyle: 'tall_pillar', hairColor: '#ffea00', outfitStyle: 'sleeveless_crop',
         primaryColor: '#111118', secondaryColor: '#a855f7', pantsColor: '#3b82f6', skinColor: '#ecc096', energyColor: '#00f5ff',
-        qcfName: 'Raijinken Eléctrico', dpName: 'Super Inazuma Kick', qcbName: 'Shinku Katategoma', dmName: 'Raikouken Tormenta'
+        qcfName: 'Raijinken Eléctrico', dpName: 'Super Inazuma Kick', qcbName: 'Shinku Katategoma', dmName: 'Raikouken Tormenta',
+        sigArchetype: 'PILLAR', sigName: 'Descarga Electrostática Raijin (214+P)'
     }),
     createFighterTemplate({
         id: 'daimon', name: 'GORO DAIMON', teamId: 'japan', teamName: 'TEAM JAPAN', title: 'Maestro Judo Colosal',
         hp: 1140, speed: 3.7, atk: 1.16, def: 1.12,
         bodyType: 'muscular_heavy', hairStyle: 'bald_headband', hairColor: '#1a1a1a', outfitStyle: 'bare_chest_pants',
         primaryColor: '#f8fafc', secondaryColor: '#dc2626', pantsColor: '#f1f5f9', skinColor: '#d49464', energyColor: '#eab308',
-        qcfName: 'Jiraishin Terremoto', dpName: 'Zujou Barai Antiaéreo', qcbName: 'Chou Oosoto Gari', dmName: 'Jigoku Gokuraku Otoshi'
+        qcfName: 'Jiraishin Terremoto', dpName: 'Zujou Barai Antiaéreo', qcbName: 'Chou Oosoto Gari', dmName: 'Jigoku Gokuraku Otoshi',
+        sigArchetype: 'GRAB', sigName: 'Tenchi Gaeshi Colosal (214+P)'
     }),
 
     // =========================================================================
@@ -690,21 +756,24 @@ const CHARACTER_ROSTER = [
         hp: 1020, speed: 4.6, atk: 1.06,
         bodyType: 'athletic', hairStyle: 'cap_ponytail', hairColor: '#facc15', outfitStyle: 'jacket_pants',
         primaryColor: '#dc2626', secondaryColor: '#ffffff', pantsColor: '#2563eb', skinColor: '#e2a778', energyColor: '#ff9500',
-        qcfName: 'Power Wave', dpName: 'Rising Tackle', qcbName: 'Burn Knuckle / Crack Shoot', dmName: 'Power Geyser / Buster Wolf'
+        qcfName: 'Power Wave', dpName: 'Rising Tackle', qcbName: 'Burn Knuckle / Crack Shoot', dmName: 'Power Geyser / Buster Wolf',
+        sigArchetype: 'CHARGE', sigName: 'Power Charge Acorazado (214+P)'
     }),
     createFighterTemplate({
         id: 'andy', name: 'ANDY BOGARD', teamId: 'fatalfury', teamName: 'TEAM FATAL FURY', title: 'Maestro Shiranui',
         hp: 980, speed: 5.0, atk: 1.0,
         bodyType: 'athletic', hairStyle: 'long_flowing', hairColor: '#fde047', outfitStyle: 'karate_gi',
         primaryColor: '#f8fafc', secondaryColor: '#dc2626', pantsColor: '#f8fafc', skinColor: '#e5b085', energyColor: '#38bdf8',
-        qcfName: 'Hishouken', dpName: 'Shoryudan', qcbName: 'Zaneiken Supersónico', dmName: 'Chou Reppa Dan'
+        qcfName: 'Hishouken', dpName: 'Shoryudan', qcbName: 'Zaneiken Supersónico', dmName: 'Chou Reppa Dan',
+        sigArchetype: 'DIVE', sigName: 'Picada Aérea Shiranui (214+P)'
     }),
     createFighterTemplate({
         id: 'joe', name: 'JOE HIGASHI', teamId: 'fatalfury', teamName: 'TEAM FATAL FURY', title: 'Campeón Muay Thai',
         hp: 1000, speed: 4.9, atk: 1.02,
         bodyType: 'athletic', hairStyle: 'spiky_bandana', hairColor: '#1e1b18', outfitStyle: 'bare_chest_pants',
         primaryColor: '#f97316', secondaryColor: '#dc2626', pantsColor: '#f97316', skinColor: '#d08b5b', energyColor: '#22d3ee',
-        qcfName: 'Hurricane Upper', dpName: 'Tiger Kick', qcbName: 'Slash Kick', dmName: 'Screw Upper Ciclón'
+        qcfName: 'Hurricane Upper', dpName: 'Tiger Kick', qcbName: 'Slash Kick', dmName: 'Screw Upper Ciclón',
+        sigArchetype: 'SLIDE', sigName: 'Barrida Ouka Kyaku (214+P)'
     }),
 
     // =========================================================================
@@ -715,21 +784,24 @@ const CHARACTER_ROSTER = [
         hp: 1030, speed: 4.5, atk: 1.08,
         bodyType: 'athletic', hairStyle: 'spiky_headband', hairColor: '#facc15', outfitStyle: 'karate_gi',
         primaryColor: '#f97316', secondaryColor: '#111827', pantsColor: '#f97316', skinColor: '#e2a778', energyColor: '#38bdf8',
-        qcfName: 'Ko-Ou Ken', dpName: 'Kohou Uppercut', qcbName: 'Hien Shippu Kyaku', dmName: 'Haoh Shoukou Ken / Ryuko Ranbu'
+        qcfName: 'Ko-Ou Ken', dpName: 'Kohou Uppercut', qcbName: 'Hien Shippu Kyaku', dmName: 'Haoh Shoukou Ken / Ryuko Ranbu',
+        sigArchetype: 'CHARGE', sigName: 'Embestida Kohou Acorazada (214+P)'
     }),
     createFighterTemplate({
         id: 'robert', name: 'ROBERT GARCIA', teamId: 'aof', teamName: 'TEAM ART OF FIGHTING', title: 'El Tigre Más Fuerte',
         hp: 1000, speed: 4.8, atk: 1.04,
         bodyType: 'athletic', hairStyle: 'ponytail_sleek', hairColor: '#291d16', outfitStyle: 'jacket_pants',
         primaryColor: '#1d4ed8', secondaryColor: '#ffffff', pantsColor: '#f8fafc', skinColor: '#e2a778', energyColor: '#fbbf24',
-        qcfName: 'Ryuugeki Ken', dpName: 'Ryuuga Antiaéreo', qcbName: 'Hien Ryuujin Kyaku', dmName: 'Haoh Shoukou Ken'
+        qcfName: 'Ryuugeki Ken', dpName: 'Ryuuga Antiaéreo', qcbName: 'Hien Ryuujin Kyaku', dmName: 'Haoh Shoukou Ken',
+        sigArchetype: 'DIVE', sigName: 'Hien Ryuujin Picada (214+P)'
     }),
     createFighterTemplate({
         id: 'takuma', name: 'TAKUMA SAKAZAKI', teamId: 'aof', teamName: 'TEAM ART OF FIGHTING', title: 'Gran Maestro Kyokugen',
         hp: 1080, speed: 4.1, atk: 1.14, def: 1.06,
         bodyType: 'muscular_heavy', hairStyle: 'tori_mask', hairColor: '#94a3b8', outfitStyle: 'bare_chest_pants',
         primaryColor: '#f8fafc', secondaryColor: '#111827', pantsColor: '#f8fafc', skinColor: '#c9885b', energyColor: '#f59e0b',
-        qcfName: 'Haoh Shikou Ken', dpName: 'Mouko Burai Gan', qcbName: 'Hien Shippu Kyaku', dmName: 'Shin Kishin Geki'
+        qcfName: 'Haoh Shikou Ken', dpName: 'Mouko Burai Gan', qcbName: 'Hien Shippu Kyaku', dmName: 'Shin Kishin Geki',
+        sigArchetype: 'COUNTER', sigName: 'Parada Kishin no Kamae (214+P)'
     }),
 
     // =========================================================================
@@ -740,21 +812,24 @@ const CHARACTER_ROSTER = [
         hp: 970, speed: 5.3, atk: 1.02,
         bodyType: 'female', hairStyle: 'long_flowing', hairColor: '#2563eb', outfitStyle: 'military_camo',
         primaryColor: '#1e3a2f', secondaryColor: '#f59e0b', pantsColor: '#2e4c3e', skinColor: '#ecc096', energyColor: '#38bdf8',
-        qcfName: 'Baltic Launcher', dpName: 'Moon Slasher', qcbName: 'Grand Saber', dmName: 'V-Slasher / Rebel Spark'
+        qcfName: 'Baltic Launcher', dpName: 'Moon Slasher', qcbName: 'Grand Saber', dmName: 'V-Slasher / Rebel Spark',
+        sigArchetype: 'SLIDE', sigName: 'Deslizamiento Cuchilla X (214+P)'
     }),
     createFighterTemplate({
         id: 'ralf', name: 'RALF JONES', teamId: 'ikari', teamName: 'TEAM IKARI WARRIORS', title: 'Coronel de Un Solo Golpe',
         hp: 1100, speed: 4.2, atk: 1.16, def: 1.08,
         bodyType: 'muscular_heavy', hairStyle: 'spiky_bandana', hairColor: '#271c15', outfitStyle: 'military_camo',
         primaryColor: '#365314', secondaryColor: '#dc2626', pantsColor: '#1e3a2f', skinColor: '#d99b66', energyColor: '#ef4444',
-        qcfName: 'Vulcan Punch Explosivo', dpName: 'Ralf Kick', qcbName: 'Gatling Attack', dmName: 'Galactica Phantom!!'
+        qcfName: 'Vulcan Punch Explosivo', dpName: 'Ralf Kick', qcbName: 'Gatling Attack', dmName: 'Galactica Phantom!!',
+        sigArchetype: 'CHARGE', sigName: 'Carga Blindada Ralf (214+P)'
     }),
     createFighterTemplate({
         id: 'clark', name: 'CLARK STILL', teamId: 'ikari', teamName: 'TEAM IKARI WARRIORS', title: 'Especialista en Agarres',
         hp: 1100, speed: 4.1, atk: 1.14, def: 1.08,
         bodyType: 'muscular_heavy', hairStyle: 'cap_ponytail', hairColor: '#facc15', outfitStyle: 'military_camo',
         primaryColor: '#1e3a8a', secondaryColor: '#94a3b8', pantsColor: '#1e293b', skinColor: '#d99b66', energyColor: '#60a5fa',
-        qcfName: 'Napalm Stretch', dpName: 'Frankensteiner', qcbName: 'Super Argentine Backbreaker', dmName: 'Ultra Argentine Backbreaker'
+        qcfName: 'Napalm Stretch', dpName: 'Frankensteiner', qcbName: 'Super Argentine Backbreaker', dmName: 'Ultra Argentine Backbreaker',
+        sigArchetype: 'GRAB', sigName: 'Frankensteiner Quebradora (214+P)'
     }),
 
     // =========================================================================
@@ -765,21 +840,24 @@ const CHARACTER_ROSTER = [
         hp: 940, speed: 5.1, atk: 0.96,
         bodyType: 'female', hairStyle: 'long_flowing', hairColor: '#9333ea', outfitStyle: 'skirt_jacket',
         primaryColor: '#ec4899', secondaryColor: '#f8fafc', pantsColor: '#db2777', skinColor: '#f3c6a0', energyColor: '#e879f9',
-        qcfName: 'Psycho Ball!', dpName: 'Psycho Sword!', qcbName: 'Phoenix Arrow / Reflector', dmName: 'Shining Crystal Bit!'
+        qcfName: 'Psycho Ball!', dpName: 'Psycho Sword!', qcbName: 'Phoenix Arrow / Reflector', dmName: 'Shining Crystal Bit!',
+        sigArchetype: 'TELEPORT', sigName: 'Teletransportación Psíquica (214+P)'
     }),
     createFighterTemplate({
         id: 'kensou', name: 'SIE KENSOU', teamId: 'psycho', teamName: 'TEAM PSYCHO SOLDIER', title: 'Joven Dragón Psíquico',
         hp: 980, speed: 4.8, atk: 1.0,
         bodyType: 'youth', hairStyle: 'spiky_headband', hairColor: '#291d16', outfitStyle: 'jacket_pants',
         primaryColor: '#2563eb', secondaryColor: '#facc15', pantsColor: '#1d4ed8', skinColor: '#e5b085', energyColor: '#38bdf8',
-        qcfName: 'Choukyuudan', dpName: 'Ryuu Gakusai', qcbName: 'Ryuurentai', dmName: 'Shinryuu Tenbu Kyaku'
+        qcfName: 'Choukyuudan', dpName: 'Ryuu Gakusai', qcbName: 'Ryuurentai', dmName: 'Shinryuu Tenbu Kyaku',
+        sigArchetype: 'TELEPORT', sigName: 'Desvanecimiento Dragón (214+P)'
     }),
     createFighterTemplate({
         id: 'chin', name: 'CHIN GENTSAI', teamId: 'psycho', teamName: 'TEAM PSYCHO SOLDIER', title: 'Maestro del Puño Borracho',
         hp: 980, speed: 4.3, atk: 1.04,
         bodyType: 'elder_master', hairStyle: 'tori_mask', hairColor: '#e2e8f0', outfitStyle: 'karate_gi',
         primaryColor: '#166534', secondaryColor: '#fef08a', pantsColor: '#14532d', skinColor: '#d49464', energyColor: '#f97316',
-        qcfName: 'KiryuuRaisen (Fuego)', dpName: 'Kaiten Teki', qcbName: 'Suikan Kanou', dmName: 'Gou Ran Enpou'
+        qcfName: 'KiryuuRaisen (Fuego)', dpName: 'Kaiten Teki', qcbName: 'Suikan Kanou', dmName: 'Gou Ran Enpou',
+        sigArchetype: 'COUNTER', sigName: 'Postura del Maestro Ebrio (214+P)'
     }),
 
     // =========================================================================
@@ -790,21 +868,24 @@ const CHARACTER_ROSTER = [
         hp: 950, speed: 5.3, atk: 1.0,
         bodyType: 'female', hairStyle: 'long_flowing', hairColor: '#451a03', outfitStyle: 'kunoichi_red',
         primaryColor: '#dc2626', secondaryColor: '#ffffff', pantsColor: '#dc2626', skinColor: '#f3c6a0', energyColor: '#ff4500',
-        qcfName: 'Kachousen (Abanico)', dpName: 'Ryuuenbu', qcbName: 'Hissatsu Shinobibachi', dmName: 'Chou Hissatsu Shinobibachi'
+        qcfName: 'Kachousen (Abanico)', dpName: 'Ryuuenbu', qcbName: 'Hissatsu Shinobibachi', dmName: 'Chou Hissatsu Shinobibachi',
+        sigArchetype: 'DIVE', sigName: 'Vuelo de Mariposa Kunoichi (214+P)'
     }),
     createFighterTemplate({
         id: 'yuri', name: 'YURI SAKAZAKI', teamId: 'women', teamName: 'TEAM WOMEN FIGHTERS', title: 'Chica Prodigio Kyokugen',
         hp: 940, speed: 5.1, atk: 0.98,
         bodyType: 'female', hairStyle: 'spiky_headband', hairColor: '#3b2219', outfitStyle: 'karate_gi',
         primaryColor: '#f8fafc', secondaryColor: '#ec4899', pantsColor: '#2563eb', skinColor: '#f3c6a0', energyColor: '#f472b6',
-        qcfName: 'Ko-Ou Ken', dpName: 'Yuri Chou Upper', qcbName: 'Raiou Ken', dmName: 'Haoh Raiou Ken / Hien Houou Kyaku'
+        qcfName: 'Ko-Ou Ken', dpName: 'Yuri Chou Upper', qcbName: 'Raiou Ken', dmName: 'Haoh Raiou Ken / Hien Houou Kyaku',
+        sigArchetype: 'SLIDE', sigName: 'Barrida Baja Yuri Dash (214+P)'
     }),
     createFighterTemplate({
         id: 'maylee', name: 'MAY LEE', teamId: 'women', teamName: 'TEAM WOMEN FIGHTERS', title: 'Heroína del Taekwondo',
         hp: 960, speed: 5.4, atk: 0.98,
         bodyType: 'female', hairStyle: 'short_bob', hairColor: '#1e1b18', outfitStyle: 'skirt_jacket',
         primaryColor: '#7e22ce', secondaryColor: '#facc15', pantsColor: '#f8fafc', skinColor: '#f3c6a0', energyColor: '#38bdf8',
-        qcfName: 'Hero Mode Slash', dpName: 'Tsubame Rokuren', qcbName: 'Lightning Needle', dmName: 'Disposition Frog!'
+        qcfName: 'Hero Mode Slash', dpName: 'Tsubame Rokuren', qcbName: 'Lightning Needle', dmName: 'Disposition Frog!',
+        sigArchetype: 'COUNTER', sigName: 'Contraataque de la Heroína (214+P)'
     }),
 
     // =========================================================================
@@ -815,21 +896,24 @@ const CHARACTER_ROSTER = [
         hp: 1020, speed: 4.9, atk: 1.04,
         bodyType: 'athletic', hairStyle: 'ponytail_sleek', hairColor: '#18181b', outfitStyle: 'karate_gi',
         primaryColor: '#f8fafc', secondaryColor: '#2563eb', pantsColor: '#f8fafc', skinColor: '#e2a778', energyColor: '#60a5fa',
-        qcfName: 'Hangetsuzan', dpName: 'Hishou Kyaku', qcbName: 'Hienzan Antiaéreo', dmName: 'Houou Kyaku!!'
+        qcfName: 'Hangetsuzan', dpName: 'Hishou Kyaku', qcbName: 'Hienzan Antiaéreo', dmName: 'Houou Kyaku!!',
+        sigArchetype: 'DIVE', sigName: 'Hishou Kyaku Pisada Aérea (214+P)'
     }),
     createFighterTemplate({
         id: 'chang', name: 'CHANG KOEHAN', teamId: 'korea', teamName: 'TEAM KOREA', title: 'Demolición con Bola de Hierro',
         hp: 1180, speed: 3.4, atk: 1.20, def: 1.15,
         bodyType: 'giant_round', hairStyle: 'bald_beard', hairColor: '#18181b', outfitStyle: 'bare_chest_pants',
         primaryColor: '#f8fafc', secondaryColor: '#475569', pantsColor: '#f1f5f9', skinColor: '#d49464', energyColor: '#94a3b8',
-        qcfName: 'Tekkyuu Dai Kaiten', dpName: 'Tekkyuu Funsaigeki', qcbName: 'Dai Hakai Nage', dmName: 'Tekkyuu Dai Bousou'
+        qcfName: 'Tekkyuu Dai Kaiten', dpName: 'Tekkyuu Funsaigeki', qcbName: 'Dai Hakai Nage', dmName: 'Tekkyuu Dai Bousou',
+        sigArchetype: 'CHARGE', sigName: 'Carga de Bola de Hierro (214+P)'
     }),
     createFighterTemplate({
         id: 'choi', name: 'CHOI BOUNGE', teamId: 'korea', teamName: 'TEAM KOREA', title: 'Velocidad y Garras de Acero',
         hp: 910, speed: 5.8, atk: 0.94,
         bodyType: 'short_claw', hairStyle: 'fedora_claws', hairColor: '#78350f', outfitStyle: 'suspenders_boxer',
         primaryColor: '#dc2626', secondaryColor: '#e2e8f0', pantsColor: '#1e3a8a', skinColor: '#e5b085', energyColor: '#38bdf8',
-        qcfName: 'Tatsumaki Shippuuzan', dpName: 'Hishou Kuuretsuzan', qcbName: 'Senpuu Hien Sashi', dmName: 'Shin! Chouzetsu Tatsumaki'
+        qcfName: 'Tatsumaki Shippuuzan', dpName: 'Hishou Kuuretsuzan', qcbName: 'Senpuu Hien Sashi', dmName: 'Shin! Chouzetsu Tatsumaki',
+        sigArchetype: 'SLIDE', sigName: 'Taladro Rasante Choi (214+P)'
     }),
 
     // =========================================================================
@@ -840,21 +924,24 @@ const CHARACTER_ROSTER = [
         hp: 1100, speed: 4.5, atk: 1.15, def: 1.08,
         bodyType: 'muscular_heavy', hairStyle: 'slick_blonde', hairColor: '#facc15', outfitStyle: 'karate_gi',
         primaryColor: '#f8fafc', secondaryColor: '#dc2626', pantsColor: '#dc2626', skinColor: '#e2a778', energyColor: '#a855f7',
-        qcfName: 'Double Reppuken!', dpName: 'Atemi Nage Counter', qcbName: 'Jaeiken Rush', dmName: 'Raging Storm / Deadly Rave!'
+        qcfName: 'Double Reppuken!', dpName: 'Atemi Nage Counter', qcbName: 'Jaeiken Rush', dmName: 'Raging Storm / Deadly Rave!',
+        sigArchetype: 'COUNTER', sigName: 'Atemi Nage Contragolpe (214+P)'
     }),
     createFighterTemplate({
         id: 'krauser', name: 'W. KRAUSER', teamId: 'boss96', teamName: "TEAM '96 BOSS", title: 'Emperador de la Oscuridad',
         hp: 1140, speed: 4.2, atk: 1.18, def: 1.10,
         bodyType: 'muscular_heavy', hairStyle: 'slick_blonde', hairColor: '#eab308', outfitStyle: 'armor_boss',
         primaryColor: '#b91c1c', secondaryColor: '#facc15', pantsColor: '#1e1b4b', skinColor: '#d99b66', energyColor: '#f59e0b',
-        qcfName: 'Blitz Ball (High/Low)', dpName: 'Leg Tomahawk', qcbName: 'Kaiser Suplex', dmName: 'Kaiser Wave / Gigantic Cyclone'
+        qcfName: 'Blitz Ball (High/Low)', dpName: 'Leg Tomahawk', qcbName: 'Kaiser Suplex', dmName: 'Kaiser Wave / Gigantic Cyclone',
+        sigArchetype: 'CHARGE', sigName: 'Duelo Kaiser Acorazado (214+P)'
     }),
     createFighterTemplate({
         id: 'mrbig', name: 'MR. BIG', teamId: 'boss96', teamName: "TEAM '96 BOSS", title: 'Jefe Maestro de Bastones',
         hp: 1050, speed: 4.7, atk: 1.08,
         bodyType: 'athletic', hairStyle: 'sunglasses_bald', hairColor: '#18181b', outfitStyle: 'jacket_pants',
         primaryColor: '#7e22ce', secondaryColor: '#f8fafc', pantsColor: '#f8fafc', skinColor: '#c9885b', energyColor: '#38bdf8',
-        qcfName: 'Ground Blaster', dpName: 'Cross Diving', qcbName: 'California Romance', dmName: 'Blaster Wave!'
+        qcfName: 'Ground Blaster', dpName: 'Cross Diving', qcbName: 'California Romance', dmName: 'Blaster Wave!',
+        sigArchetype: 'PILLAR', sigName: 'Descarga Eléctrica Bastón (214+P)'
     }),
 
     // =========================================================================
@@ -865,21 +952,24 @@ const CHARACTER_ROSTER = [
         hp: 1080, speed: 4.6, atk: 1.12, def: 1.06,
         bodyType: 'muscular_heavy', hairStyle: 'spiky_headband', hairColor: '#e2e8f0', outfitStyle: 'jacket_pants',
         primaryColor: '#991b1b', secondaryColor: '#ffffff', pantsColor: '#111827', skinColor: '#d49464', energyColor: '#f97316',
-        qcfName: 'Upper Duel', dpName: 'Jet Counter', qcbName: 'Missile Might Bash', dmName: 'Final Impact / Million Bash'
+        qcfName: 'Upper Duel', dpName: 'Jet Counter', qcbName: 'Missile Might Bash', dmName: 'Final Impact / Million Bash',
+        sigArchetype: 'CHARGE', sigName: 'Golpe Sísmico Acorazado (214+P)'
     }),
     createFighterTemplate({
         id: 'shermie', name: 'SHERMIE', teamId: 'orochi97', teamName: "TEAM '97 SPECIAL", title: 'Relámpago Rugiente de Orochi',
         hp: 980, speed: 4.8, atk: 1.06,
         bodyType: 'female', hairStyle: 'bangs_over_eye', hairColor: '#be123c', outfitStyle: 'skirt_jacket',
         primaryColor: '#f472b6', secondaryColor: '#9333ea', pantsColor: '#f472b6', skinColor: '#f3c6a0', energyColor: '#e879f9',
-        qcfName: 'Shermie Spiral', dpName: 'Axle Spin Kick', qcbName: 'Shermie Whip', dmName: 'Shermie Flash / Carnival'
+        qcfName: 'Shermie Spiral', dpName: 'Axle Spin Kick', qcbName: 'Shermie Whip', dmName: 'Shermie Flash / Carnival',
+        sigArchetype: 'GRAB', sigName: 'Shermie Spiral Quebradora (214+P)'
     }),
     createFighterTemplate({
         id: 'chris', name: 'CHRIS', teamId: 'orochi97', teamName: "TEAM '97 SPECIAL", title: 'Llama del Destino de Orochi',
         hp: 940, speed: 5.5, atk: 1.0,
         bodyType: 'youth', hairStyle: 'short_bob', hairColor: '#78350f', outfitStyle: 'jacket_pants',
         primaryColor: '#1d4ed8', secondaryColor: '#f8fafc', pantsColor: '#f1f5f9', skinColor: '#f3c6a0', energyColor: '#a855f7',
-        qcfName: 'Shooting Dancer Thrust', dpName: 'Glider Stomp', qcbName: 'Hunting Air', dmName: 'Chain Slide Touch / Twister'
+        qcfName: 'Shooting Dancer Thrust', dpName: 'Glider Stomp', qcbName: 'Hunting Air', dmName: 'Chain Slide Touch / Twister',
+        sigArchetype: 'TELEPORT', sigName: 'Desplazamiento Espectral (214+P)'
     }),
 
     // =========================================================================
@@ -890,21 +980,24 @@ const CHARACTER_ROSTER = [
         hp: 960, speed: 5.6, atk: 1.02,
         bodyType: 'female', hairStyle: 'short_bob', hairColor: '#dc2626', outfitStyle: 'suspenders_boxer',
         primaryColor: '#f8fafc', secondaryColor: '#dc2626', pantsColor: '#1e293b', skinColor: '#f3c6a0', energyColor: '#fbbf24',
-        qcfName: 'Machine Gun Puncher', dpName: 'Parry Puncher Upper', qcbName: 'Puncher Vision Sway', dmName: 'Champion Puncher / Crazy Puncher'
+        qcfName: 'Machine Gun Puncher', dpName: 'Parry Puncher Upper', qcbName: 'Puncher Vision Sway', dmName: 'Champion Puncher / Crazy Puncher',
+        sigArchetype: 'CHARGE', sigName: 'Esquiva y Gancho Blindado (214+P)'
     }),
     createFighterTemplate({
         id: 'ramon', name: 'RAMON', teamId: 'agents2000', teamName: 'TEAM 2000 AGENTS', title: 'El Diablo Amarillo (Lucha Libre)',
         hp: 980, speed: 5.4, atk: 1.0,
         bodyType: 'athletic', hairStyle: 'eyepatch_lucha', hairColor: '#facc15', outfitStyle: 'bare_chest_pants',
         primaryColor: '#15803d', secondaryColor: '#facc15', pantsColor: '#15803d', skinColor: '#d99b66', energyColor: '#4ade80',
-        qcfName: 'Tiger Neck Chancery', dpName: 'Flying Body Attack', qcbName: 'Rolling Sobat', dmName: 'Tiger Spin / El Diablo Amarillo'
+        qcfName: 'Tiger Neck Chancery', dpName: 'Flying Body Attack', qcbName: 'Rolling Sobat', dmName: 'Tiger Spin / El Diablo Amarillo',
+        sigArchetype: 'GRAB', sigName: 'Quebradora Tigre Lucha (214+P)'
     }),
     createFighterTemplate({
         id: 'seth', name: 'SETH', teamId: 'agents2000', teamName: 'TEAM 2000 AGENTS', title: 'Agente Táctico de Defensa',
         hp: 1060, speed: 4.4, atk: 1.08, def: 1.06,
         bodyType: 'muscular_heavy', hairStyle: 'mohawk_agent', hairColor: '#cbd5e1', outfitStyle: 'suspenders_boxer',
         primaryColor: '#334155', secondaryColor: '#f8fafc', pantsColor: '#0f172a', skinColor: '#8d5524', energyColor: '#38bdf8',
-        qcfName: 'Sho-Getsu', dpName: 'Antiair Upper', qcbName: 'Kensetsu / Kakugetsu', dmName: 'Sou-Sho-Getsu / Iriomote'
+        qcfName: 'Sho-Getsu', dpName: 'Antiair Upper', qcbName: 'Kensetsu / Kakugetsu', dmName: 'Sou-Sho-Getsu / Iriomote',
+        sigArchetype: 'COUNTER', sigName: 'Atemi de Redirección (214+P)'
     }),
 
     // =========================================================================
@@ -915,21 +1008,24 @@ const CHARACTER_ROSTER = [
         hp: 1000, speed: 5.2, atk: 1.08,
         bodyType: 'athletic', hairStyle: 'spiky_white', hairColor: '#f8fafc', outfitStyle: 'jacket_pants',
         primaryColor: '#111827', secondaryColor: '#dc2626', pantsColor: '#111827', skinColor: '#c28254', energyColor: '#ff2a00',
-        qcfName: 'Ein Trigger -> Second Shoot', dpName: 'Crow Bites', qcbName: 'Blackout Teleport / Minute Spike', dmName: 'Chain Drive / Heat Drive!'
+        qcfName: 'Ein Trigger -> Second Shoot', dpName: 'Crow Bites', qcbName: 'Blackout Teleport / Minute Spike', dmName: 'Chain Drive / Heat Drive!',
+        sigArchetype: 'PILLAR', sigName: 'Llamarada Volcánica Blackout (214+P)'
     }),
     createFighterTemplate({
         id: 'maxima', name: 'MAXIMA', teamId: 'nests2001', teamName: 'TEAM 2001 NESTS', title: 'Soldado Cyborg Tipo-M',
         hp: 1160, speed: 3.7, atk: 1.18, def: 1.14,
         bodyType: 'muscular_heavy', hairStyle: 'cyborg_pompadour', hairColor: '#291d16', outfitStyle: 'armor_boss',
         primaryColor: '#1d4ed8', secondaryColor: '#facc15', pantsColor: '#1e3a8a', skinColor: '#d99b66', energyColor: '#38bdf8',
-        qcfName: 'M4 Vapor Cannon!', dpName: 'M11 Dangerous Arch', qcbName: 'M19 Blitz Cannon', dmName: 'Bunker Buster / Maxima Revenger!'
+        qcfName: 'M4 Vapor Cannon!', dpName: 'M11 Dangerous Arch', qcbName: 'M19 Blitz Cannon', dmName: 'Bunker Buster / Maxima Revenger!',
+        sigArchetype: 'CHARGE', sigName: 'Maxima Bunker Blindado (214+P)'
     }),
     createFighterTemplate({
         id: 'whip', name: 'WHIP', teamId: 'nests2001', teamName: 'TEAM 2001 NESTS', title: 'Maestra del Látigo Voodoo',
         hp: 950, speed: 4.9, atk: 1.02,
         bodyType: 'female', hairStyle: 'long_flowing', hairColor: '#78350f', outfitStyle: 'military_camo',
         primaryColor: '#14532d', secondaryColor: '#f59e0b', pantsColor: '#166534', skinColor: '#f3c6a0', energyColor: '#f43f5e',
-        qcfName: 'Boomerang Shot "SC"', dpName: 'Crescent Swatter', qcbName: 'Hook Shot / Desert Eagle', dmName: 'Sonic Slaughter "KW"!'
+        qcfName: 'Boomerang Shot "SC"', dpName: 'Crescent Swatter', qcbName: 'Hook Shot / Desert Eagle', dmName: 'Sonic Slaughter "KW"!',
+        sigArchetype: 'SLIDE', sigName: 'Barrida con Látigo Strings (214+P)'
     }),
 
     // =========================================================================
@@ -940,56 +1036,64 @@ const CHARACTER_ROSTER = [
         hp: 1000, speed: 5.0, atk: 1.10,
         bodyType: 'athletic', hairStyle: 'bangs_over_eye', hairColor: '#dc2626', outfitStyle: 'jacket_pants',
         primaryColor: '#111827', secondaryColor: '#f8fafc', pantsColor: '#dc2626', skinColor: '#e5b085', energyColor: '#a855f7',
-        qcfName: '108 Shiki: Yami Barai', dpName: '100 Shiki: Oniyaki', qcbName: '127 Shiki: Aoi Hana (3 Hits)', dmName: 'Kin 1211 Shiki: Ya Otome!'
+        qcfName: '108 Shiki: Yami Barai', dpName: '100 Shiki: Oniyaki', qcbName: '127 Shiki: Aoi Hana (3 Hits)', dmName: 'Kin 1211 Shiki: Ya Otome!',
+        sigArchetype: 'PILLAR', sigName: 'Pilar de Llamas Oscuras (214+P)'
     }),
     createFighterTemplate({
         id: 'kula', name: 'KULA DIAMOND', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Muñeca de Hielo Anti-K',
         hp: 950, speed: 5.3, atk: 1.02,
         bodyType: 'female', hairStyle: 'long_flowing', hairColor: '#38bdf8', outfitStyle: 'jacket_pants',
         primaryColor: '#991b1b', secondaryColor: '#7dd3fc', pantsColor: '#7f1d1d', skinColor: '#f8d8be', energyColor: '#00f5ff',
-        qcfName: 'Diamond Breath', dpName: 'Crow Bites Ice', qcbName: 'Counter Shell / Ray Spin', dmName: 'Diamond Edge / Freeze Execution!'
+        qcfName: 'Diamond Breath', dpName: 'Crow Bites Ice', qcbName: 'Counter Shell / Ray Spin', dmName: 'Diamond Edge / Freeze Execution!',
+        sigArchetype: 'COUNTER', sigName: 'Escudo de Cristal de Hielo (214+P)'
     }),
     createFighterTemplate({
         id: 'k9999', name: 'K9999', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Experimento Mutante #9999',
         hp: 980, speed: 5.0, atk: 1.10,
         bodyType: 'athletic', hairStyle: 'blue_spiky_cape', hairColor: '#2563eb', outfitStyle: 'jacket_pants',
         primaryColor: '#dc2626', secondaryColor: '#3b82f6', pantsColor: '#1e3a8a', skinColor: '#e2a778', energyColor: '#ff0055',
-        qcfName: 'Get Out of Here! (Taladro)', dpName: 'Break Into Pieces!', qcbName: 'Split Second Slash', dmName: 'You Give Display! / Power Gushing!'
+        qcfName: 'Get Out of Here! (Taladro)', dpName: 'Break Into Pieces!', qcbName: 'Split Second Slash', dmName: 'You Give Display! / Power Gushing!',
+        sigArchetype: 'PILLAR', sigName: 'Erupción de Brazo Biomecánico (214+P)'
     }),
     createFighterTemplate({
         id: 'angel', name: 'ANGEL', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Cadena Unchain de NESTS',
         hp: 970, speed: 5.4, atk: 1.04,
         bodyType: 'female', hairStyle: 'short_bob', hairColor: '#f8fafc', outfitStyle: 'skirt_jacket',
         primaryColor: '#1e293b', secondaryColor: '#f8fafc', pantsColor: '#1e293b', skinColor: '#e2a778', energyColor: '#f43f5e',
-        qcfName: 'Unchain Circle Starter', dpName: 'Red Sky of Japonesque', qcbName: 'Beyond the Flames', dmName: 'Loyalty Test for theists'
+        qcfName: 'Unchain Circle Starter', dpName: 'Red Sky of Japonesque', qcbName: 'Beyond the Flames', dmName: 'Loyalty Test for theists',
+        sigArchetype: 'TELEPORT', sigName: 'Paso Furtivo Unchain (214+P)'
     }),
     createFighterTemplate({
         id: 'shingo', name: 'SHINGO YABUKI', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Discípulo Entusiasta de Kyo',
         hp: 1020, speed: 4.7, atk: 1.06,
         bodyType: 'athletic', hairStyle: 'spiky_headband', hairColor: '#291d16', outfitStyle: 'jacket_pants',
         primaryColor: '#1e3a8a', secondaryColor: '#f8fafc', pantsColor: '#1e3a8a', skinColor: '#e2a778', energyColor: '#fbbf24',
-        qcfName: '114 Shiki: Aragami Mikansei', dpName: '100 Shiki: Oniyaki Mikansei', qcbName: 'Shingo Kick!!', dmName: 'Burning Shingo / Kakehou Rin!'
+        qcfName: '114 Shiki: Aragami Mikansei', dpName: '100 Shiki: Oniyaki Mikansei', qcbName: 'Shingo Kick!!', dmName: 'Burning Shingo / Kakehou Rin!',
+        sigArchetype: 'CHARGE', sigName: 'Embestida Imprudente Shingo (214+P)'
     }),
     createFighterTemplate({
         id: 'bluemary', name: 'BLUE MARY', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Agente Comando Sambo',
         hp: 970, speed: 5.2, atk: 1.02,
         bodyType: 'female', hairStyle: 'short_bob', hairColor: '#facc15', outfitStyle: 'skirt_jacket',
         primaryColor: '#dc2626', secondaryColor: '#2563eb', pantsColor: '#1d4ed8', skinColor: '#f3c6a0', energyColor: '#f43f5e',
-        qcfName: 'Spin Fall', dpName: 'Vertical Arrow -> Snatch', qcbName: 'Straight Slicer', dmName: 'M. Typhoon / M. Dynamite Swing!'
+        qcfName: 'Spin Fall', dpName: 'Vertical Arrow -> Snatch', qcbName: 'Straight Slicer', dmName: 'M. Typhoon / M. Dynamite Swing!',
+        sigArchetype: 'COUNTER', sigName: 'Palanca Defensiva Mary (214+P)'
     }),
     createFighterTemplate({
         id: 'rin', name: 'LIN (RIN)', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Asesino del Clan Hizoku',
         hp: 980, speed: 5.5, atk: 1.04,
         bodyType: 'slender_tall', hairStyle: 'ponytail_sleek', hairColor: '#18181b', outfitStyle: 'karate_gi',
         primaryColor: '#1f2937', secondaryColor: '#f8fafc', pantsColor: '#111827', skinColor: '#d1d5db', energyColor: '#10b981',
-        qcfName: 'Jatotsusen (Mano Venenosa)', dpName: 'Hiten Kyaku', qcbName: 'Mueiasshu Teleport', dmName: 'Senshukourai: Doku蛾 (Veneno)'
+        qcfName: 'Jatotsusen (Mano Venenosa)', dpName: 'Hiten Kyaku', qcbName: 'Mueiasshu Teleport', dmName: 'Senshukourai: Doku蛾 (Veneno)',
+        sigArchetype: 'TELEPORT', sigName: 'Neblina Venenosa Hizoku (214+P)'
     }),
     createFighterTemplate({
         id: 'jhun', name: 'JHUN HOON', teamId: 'edit', teamName: 'EDIT CHARACTERS', title: 'Rival Estilizado del Taekwondo',
         hp: 1000, speed: 5.1, atk: 1.04,
         bodyType: 'athletic', hairStyle: 'long_flowing', hairColor: '#94a3b8', outfitStyle: 'karate_gi',
         primaryColor: '#3b82f6', secondaryColor: '#f8fafc', pantsColor: '#f8fafc', skinColor: '#e5b085', energyColor: '#38bdf8',
-        qcfName: 'Manrikyou Stance Kick', dpName: 'Kuusajin Antiaéreo', qcbName: 'Kouryuukyaku', dmName: 'Houou Ressoukyaku / HikoGeki!'
+        qcfName: 'Manrikyou Stance Kick', dpName: 'Kuusajin Antiaéreo', qcbName: 'Kouryuukyaku', dmName: 'Houou Ressoukyaku / HikoGeki!',
+        sigArchetype: 'DIVE', sigName: 'Hacha Voladora de la Garza (214+P)'
     }),
 
     // =========================================================================
@@ -1001,7 +1105,8 @@ const CHARACTER_ROSTER = [
         bodyType: 'boss_rugal', hairStyle: 'boss_rugal', hairColor: '#e2e8f0', outfitStyle: 'armor_boss',
         primaryColor: '#b8001f', secondaryColor: '#e2e8f0', pantsColor: '#140812', skinColor: '#c98a63', energyColor: '#ff0044',
         qcfName: 'Kaiser Reppuken (236+P)', dpName: 'Genocide Cutter! (623+P)', qcbName: 'God Press! (214+K)',
-        dmName: 'Gigantic Pressure! (236236+P)', sdmName: 'Kaiser Phoenix Omega (MAX)'
+        dmName: 'Gigantic Pressure! (236236+P)', sdmName: 'Kaiser Phoenix Omega (MAX)',
+        sigArchetype: 'PILLAR', sigName: 'Genocide Pillar Apocalíptico (214+P)'
     })
 ];
 
